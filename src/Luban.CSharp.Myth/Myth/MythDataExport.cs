@@ -116,7 +116,7 @@ public class MythDataExport : DataExporterBase
                             expressions.Add(new ExpressionInfo()
                             {
                                 expression = mythValueType.Value,
-                                functionName = TypeUtil.ToCamelCase($"{tableMythField.Name}_{tableIndexType.Value}"),
+                                functionName = TypeUtil.ToCsStyleName($"{tableMythField.Name}_{tableIndexType.Value}"),
                                 parameterType = enumToParameterType[mythParameterTypeEnumValue.Type.DefEnum][mythParameterTypeEnumValue.Value]
                             });
                         }
