@@ -1,13 +1,14 @@
 ﻿using Luban.DataTarget;
 using Luban.DataVisitors;
 using Luban.Defs;
+using System.Text;
 
 namespace Luban.L10N.DataTarget;
 
 [DataTarget("text-list")]
 internal class TextKeyListDataTarget : DataTargetBase
 {
-    protected override string OutputFileExt => "txt";
+    protected override string DefaultOutputFileExt => "txt";
 
     public override bool ExportAllRecords => true;
 
@@ -35,6 +36,6 @@ internal class TextKeyListDataTarget : DataTargetBase
 
         string outputFile = EnvManager.Current.GetOption(BuiltinOptionNames.L10NFamily, BuiltinOptionNames.L10NTextListFile, false);
 
-        return new OutputFile { File = outputFile, Content = content };
+        return new OutputFile { File = outputFile, Content = content, Encoding = FileEncoding };
     }
 }

@@ -8,6 +8,10 @@ public static class BuiltinOptionNames
 
     public const string OutputDataDir = "outputDataDir";
 
+    public const string OutputCodeExtension = "outputCodeExtension";
+
+    public const string OutputDataExtension = "fileExt";
+
     public const string CodeStyle = "codeStyle";
 
     public const string DataExporter = "dataExporter";
@@ -49,4 +53,6 @@ public static class BuiltinOptionNames
     public const string NamingConvention = "namingConvention";
 
     public const string LineEnding = "lineEnding";
+
+    public const string FileEncoding = "fileEncoding";
 }

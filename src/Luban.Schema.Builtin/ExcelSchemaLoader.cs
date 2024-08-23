@@ -63,7 +63,7 @@ public class ExcelSchemaLoader : SchemaLoaderBase
             Assembly = new DefAssembly(new RawAssembly()
             {
                 Targets = new List<RawTarget> { new() { Name = "default", Manager = "Tables" } },
-            }, "default", new List<string>()),
+            }, "default", new List<string>(), null),
         };
         defTableRecordType.PreCompile();
         defTableRecordType.Compile();
@@ -89,6 +89,10 @@ public class ExcelSchemaLoader : SchemaLoaderBase
             string group = (data.GetField("group") as DString).Value.Trim();
             string comment = (data.GetField("comment") as DString).Value.Trim();
             bool readSchemaFromFile = (data.GetField("read_schema_from_file") as DBool).Value;
+            if (readSchemaFromFile && string.IsNullOrEmpty(TypeUtil.GetNamespace(valueType)))
+            {
+                valueType = TypeUtil.MakeFullName(module, valueType);
+            }
             string inputFile = (data.GetField("input") as DString).Value.Trim();
             // string patchInput = (data.GetField("patch_input") as DString).Value.Trim();
             string tags = (data.GetField("tags") as DString).Value.Trim();
@@ -104,7 +108,7 @@ public class ExcelSchemaLoader : SchemaLoaderBase
         var ass = new DefAssembly(new RawAssembly()
         {
             Targets = new List<RawTarget> { new() { Name = "default", Manager = "Tables" } },
-        }, "default", new List<string>());
+        }, "default", new List<string>(), null);
 
         var enumItemType = new DefBean(new RawBean()
         {
@@ -187,7 +191,7 @@ public class ExcelSchemaLoader : SchemaLoaderBase
                 Groups = SchemaLoaderUtil.CreateGroups((data.GetField("group") as DString).Value.Trim()),
                 Items = items.Datas.Cast<DBean>().Select(d => new EnumItem()
                 {
-                    Name = (d.GetField("name") as DString).Value,
+                    Name = (d.GetField("name") as DString).Value.Trim(),
                     Alias = (d.GetField("alias") as DString).Value,
                     Value = (d.GetField("value") as DString).Value,
                     Comment = (d.GetField("comment") as DString).Value,
@@ -203,7 +207,7 @@ public class ExcelSchemaLoader : SchemaLoaderBase
         var ass = new DefAssembly(new RawAssembly()
         {
             Targets = new List<RawTarget> { new() { Name = "default", Manager = "Tables" } },
-        }, "default", new List<string>());
+        }, "default", new List<string>(), null);
 
         var defBeanFieldType = new DefBean(new RawBean()
         {
