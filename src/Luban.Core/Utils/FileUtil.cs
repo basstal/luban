@@ -239,10 +239,10 @@ public static class FileUtil
         {
             foreach (var file in Directory.GetFiles(fileOrDirectory, "*", SearchOption.AllDirectories))
             {
-                if (IsIgnoreFile(file))
-                {
-                    continue;
-                }
+                // if (IsIgnoreFile(file))
+                // {
+                //     continue;
+                // }
                 if (file.EndsWith(".meta", StringComparison.Ordinal))
                 {
                     continue;
