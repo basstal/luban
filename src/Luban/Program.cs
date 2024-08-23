@@ -1,31 +1,21 @@
 ﻿using CommandLine;
-using Luban.CSharp;
-using Luban.DataExporter.Builtin;
-using Luban.DataLoader.Builtin;
 using Luban.DataLoader.Builtin.DataVisitors;
-using Luban.DataValidator.Builtin.Collection;
-using Luban.L10N;
 using Luban.Pipeline;
-using Luban.Protobuf.TypeVisitors;
-using Luban.Schema.Builtin;
 using Luban.Tmpl;
 using Luban.Utils;
 using NLog;
-using System.Reflection;
 using System.Text;
 
 namespace Luban;
 
 internal static class Program
 {
-
     private class CommandOptions
     {
-
         [Option('s', "schemaCollector", Required = false, HelpText = "schema collector name")]
         public string SchemaCollector { get; set; } = "default";
 
-        [Option("conf", Required = true, HelpText = "luban conf file")]
+        [Option("config", Required = true, HelpText = "luban config file")]
         public string ConfigFile { get; set; }
 
         [Option('t', "target", Required = true, HelpText = "target name")]
@@ -168,13 +158,24 @@ internal static class Program
             settings.HelpWriter = helpWriter;
         });
 
-        var result = parser.ParseArguments<CommandOptions>(args);
-        if (result.Tag == ParserResultType.NotParsed)
+        try
         {
-            Console.Error.WriteLine(helpWriter.ToString());
+            var result = parser.ParseArguments<CommandOptions>(args);
+            if (result.Tag == ParserResultType.NotParsed)
+            {
+                Console.Error.WriteLine(helpWriter.ToString());
+                Environment.Exit(1);
+            }
+
+            return ((Parsed<CommandOptions>)result).Value;
+        }
+        catch (Exception exception)
+        {
+            Console.Error.WriteLine(exception.Message);
             Environment.Exit(1);
         }
-        return ((Parsed<CommandOptions>)result).Value;
+
+        return null;
     }
 
     private static Dictionary<string, string> ParseXargs(IEnumerable<string> xargs)

@@ -55,7 +55,7 @@ public class SimpleLauncher
             string dllName = Path.GetFileNameWithoutExtension(dllFile);
             if (dllName.Contains("Luban") && AppDomain.CurrentDomain.GetAssemblies().All(a => a.GetName().Name != dllName))
             {
-                s_logger.Trace("load dll:{dll}", dllFile);
+                s_logger.Debug("load dll:{dll}", dllFile);
                 Assembly.Load(dllName);
             }
         }
@@ -64,6 +64,7 @@ public class SimpleLauncher
         {
             if (assembly.GetCustomAttribute<RegisterBehaviourAttribute>() != null)
             {
+                s_logger.Debug($"ScanRegisterAssembly {assembly.FullName}");
                 ScanRegisterAssembly(assembly);
             }
         }

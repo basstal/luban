@@ -122,8 +122,8 @@ public class XmlSchemaLoader : SchemaLoaderBase
         Collector.Add(en);
     }
 
-    private readonly List<string> _tableOptionalAttrs = new() { "index", "mode", "group", "comment", "readSchemaFromFile", "output", "tags" };
-    private readonly List<string> _tableRequireAttrs = new() { "name", "value", "input" };
+    private readonly List<string> _tableOptionalAttrs = new() { "mode", "group", "comment", "readSchemaFromFile", "output", "tags" };
+    private readonly List<string> _tableRequireAttrs = new() { "name", "value", "input", "index" };
 
     private void AddTable(XElement e)
     {

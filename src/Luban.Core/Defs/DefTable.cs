@@ -106,9 +106,12 @@ public class DefTable : DefTypeBase
                 }
                 else
                 {
-                    IndexField = ValueTType.DefBean.HierarchyFields[0];
-                    Index = IndexField.Name;
-                    IndexFieldIdIndex = 0;
+                    // shimmer modify disable hidden primary key mode
+                    throw new Exception($"table:'{FullName}' 必须指定主键字段");
+                    // IndexField = ValueTType.DefBean.HierarchyFields[0];
+                    // Index = IndexField.Name;
+                    // IndexFieldIdIndex = 0;
+                    // shimmer modify end
                 }
                 KeyTType = IndexField.CType;
                 Type = TMap.Create(false, null, KeyTType, ValueTType, false);

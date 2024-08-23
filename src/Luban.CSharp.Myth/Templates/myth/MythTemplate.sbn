@@ -1,0 +1,131 @@
+using System;
+using System.Collections.Generic;
+{{
+    parent_def_type = __bean.parent_def_type
+    export_fields = __bean.export_fields
+    hierarchy_export_fields = __bean.hierarchy_export_fields
+}}
+
+{{namespace_with_grace_begin __namespace_with_top_module}}
+
+public {{class_modifier __bean}} partial class {{__name}} : {{if parent_def_type}}{{__bean.parent}}{{else}}Luban.BeanBase{{end}}
+{
+#region ConstDefinitions
+{{~ for constDefinition in __constDefinitions ~}}
+    {{constDefinition}}
+{{~ end ~}}
+#endregion
+
+#region Methods
+{{~ for method in __methods ~}}
+    {{method}}
+{{~ end}}
+#endregion
+
+{{~ for delegateTypeMapping in __delegateTypesMapping ~}}
+private static Dictionary<string, {{ delegateTypeMapping.key }}> m_methodDict{{ delegateTypeMapping.value.item1 }} = new Dictionary<string, {{ delegateTypeMapping.key }}>()
+{
+    {{ delegateTypeMapping.value.item3 }}
+};
+{{~ end ~}}
+
+public static bool Evaluate(string functionName, params int[] args)
+{
+    switch (args.Length)
+    {
+        {{~ for delegateType in __delegateTypesMapping ~}}
+            {{~ if delegateType.value.item4 == 'Integer' ~}}
+            case {{ delegateType.value.item2 }}:
+                return m_methodDict{{ delegateType.value.item1 }}[functionName]({{ for i in (0..(delegateType.value.item2-1)) ~}}args[{{ i }}]{{~ if i < delegateType.value.item2-1 ~}}, {{ end ~}}{{~ end }});
+            {{~ end ~}}
+        {{~ end ~}}
+        default:
+            throw new ArgumentException($"No method matching the given number of arguments ({ args.Length }).");
+    }
+}
+
+public static bool Evaluate(string functionName, List<int> arg)
+{
+    {{~ for delegateTypeMapping in __delegateTypesMapping ~}}
+        {{~ if delegateTypeMapping.value.item4 == 'ListInteger' ~}}
+            return m_methodDict{{ delegateTypeMapping.value.item1 }}[functionName](arg);
+    {{~ end ~}}
+    {{~ end ~}}
+}
+
+
+
+private static readonly Dictionary<string, int> m_constValues = new Dictionary<string, int>
+{
+{{~ for kvp in __constValues ~}}
+    {{~ if kvp.value.size == 1 ~}}
+        { "{{ kvp.key }}", {{ kvp.value[0] }} },
+    {{~ else ~}}
+        // TODO: length 2 and more
+    {{~ end ~}}
+{{~ end ~}}
+};
+
+public static int GetConstValue(string key)
+{
+    if (m_constValues.TryGetValue(key, out var value))
+    {
+        return value;
+    }
+    throw new ArgumentException($"Constant with key '{key}' not found.");
+}
+
+public static Dictionary<string, Func<List<int>, int>> valueCalls = new Dictionary<string, Func<List<int>, int>>
+{
+    {{ __valueCallMappings }}
+};
+
+#region LibraryFunctions
+public static int Max(List<int> values)
+{
+    int maxValue = int.MinValue;
+    for (int i = 0; i < values.Count; i++)
+    {
+        if (values[i] > maxValue)
+        {
+            maxValue = values[i];
+        }
+    }
+
+    return maxValue;
+}
+
+public static int Min(List<int> values)
+{
+    int minValue = int.MaxValue;
+    for (int i = 0; i < values.Count; i++)
+    {
+        if (values[i] < minValue)
+        {
+            minValue = values[i];
+        }
+    }
+
+    return minValue;
+}
+
+public static int Average(List<int> values)
+{
+    if (values.Count == 0)
+    {
+        return 0;
+    }
+
+    int sum = 0;
+    for (int i = 0; i < values.Count; i++)
+    {
+        sum += values[i];
+    }
+
+    return sum / values.Count;
+}
+#endregion
+
+}
+
+{{namespace_with_grace_end __namespace_with_top_module}}

@@ -39,6 +39,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Luban.Bson\Luban.Bson.csproj" />
       <ProjectReference Include="..\Luban.Cpp\Luban.Cpp.csproj" />
+      <ProjectReference Include="..\Luban.CSharp.Myth\Luban.CSharp.Myth.csproj" />
       <ProjectReference Include="..\Luban.CSharp\Luban.CSharp.csproj" />
       <ProjectReference Include="..\Luban.Core\Luban.Core.csproj" />
       <ProjectReference Include="..\Luban.DataTarget.Builtin\Luban.DataTarget.Builtin.csproj" />
@@ -52,6 +53,7 @@
       <ProjectReference Include="..\Luban.Lua\Luban.Lua.csproj" />
       <ProjectReference Include="..\Luban.MsgPack\Luban.MsgPack.csproj" />
       <ProjectReference Include="..\Luban.PHP\Luban.PHP.csproj" />
+      <ProjectReference Include="..\Luban.Protobuf.Shimmer\Luban.Protobuf.Shimmer.csproj" />
       <ProjectReference Include="..\Luban.Protobuf\Luban.Protobuf.csproj" />
       <ProjectReference Include="..\Luban.Python\Luban.Python.csproj" />
       <ProjectReference Include="..\Luban.Schema.Builtin\Luban.Schema.Builtin.csproj" />
@@ -64,7 +66,7 @@
 
     <ItemGroup>
       <None Update="nlog.xml">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Templates\common\flatbuffers\enum.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
