@@ -43,7 +43,7 @@ public abstract class CodeTargetBase : ICodeTarget
             env.GetOptionOrDefault($"{namingKey}.{Name}", "property", true, ""),
             env.GetOptionOrDefault($"{namingKey}.{Name}", "field", true, ""),
             env.GetOptionOrDefault($"{namingKey}.{Name}", "enumItem", true, "")
-            );
+        );
     }
 
     protected abstract IReadOnlySet<string> PreservedKeyWords { get; }
@@ -66,6 +66,7 @@ public abstract class CodeTargetBase : ICodeTarget
             {
                 throw new Exception($"table name {table.FullName} is preserved keyword");
             }
+
             if (!IsValidateName(table.Name, NameLocation.TableName))
             {
                 throw new Exception($"table name {table.FullName} is invalid");
@@ -78,16 +79,19 @@ public abstract class CodeTargetBase : ICodeTarget
             {
                 throw new Exception($"bean name {bean.FullName} is preserved keyword");
             }
+
             if (!IsValidateName(bean.Name, NameLocation.BeanName))
             {
                 throw new Exception($"bean name {bean.FullName}  is invalid");
             }
+
             foreach (var field in bean.Fields)
             {
                 if (IsPreserveKeyWords(field.Name))
                 {
                     throw new Exception($"the name of field {bean.FullName}::{field.Name} is preserved keyword");
                 }
+
                 if (!IsValidateName(field.Name, NameLocation.BeanFieldName))
                 {
                     throw new Exception($"the name of field {bean.FullName}::{field.Name} is invalid");
@@ -101,23 +105,26 @@ public abstract class CodeTargetBase : ICodeTarget
             {
                 throw new Exception($"enum name {@enum.FullName} is preserved keyword");
             }
+
             if (!IsValidateName(@enum.Name, NameLocation.EnumName))
             {
                 throw new Exception($"enum name {@enum.FullName}  is invalid");
             }
+
             foreach (var item in @enum.Items)
             {
                 if (IsPreserveKeyWords(item.Name))
                 {
                     throw new Exception($"the name of enum item '{@enum.FullName}::{item.Name}' is preserved keyword");
                 }
+
                 if (!IsValidateName(item.Name, NameLocation.EnumItemName))
                 {
                     throw new Exception($"the name of enum item '{@enum.FullName}::{item.Name}' is invalid");
                 }
             }
         }
-    }   
+    }
 
     public virtual void ValidateDefinition(GenerationContext ctx)
     {
@@ -164,10 +171,25 @@ public abstract class CodeTargetBase : ICodeTarget
             }));
         }
 
+        tasks.Add(Task.Run(() =>
+        {
+            var writer = new CodeWriter();
+            if (GenerateXlsxOpener(ctx, writer))
+            {
+                return CreateOutputFile($"EditorXlsxOpener.{FileSuffixName}", writer.ToResult(FileHeader));
+            }
+
+            return null;
+        }));
+
         Task.WaitAll(tasks.ToArray());
         foreach (var task in tasks)
         {
-            manifest.AddFile(task.Result);
+            var result = task.Result;
+            if (result != null)
+            {
+                manifest.AddFile(result);
+            }
         }
     }
 
@@ -191,4 +213,10 @@ public abstract class CodeTargetBase : ICodeTarget
     public abstract void GenerateTable(GenerationContext ctx, DefTable table, CodeWriter writer);
     public abstract void GenerateBean(GenerationContext ctx, DefBean bean, CodeWriter writer);
     public abstract void GenerateEnum(GenerationContext ctx, DefEnum @enum, CodeWriter writer);
+
+
+    public virtual bool GenerateXlsxOpener(GenerationContext ctx, CodeWriter writer)
+    {
+        return false;
+    }
 }

@@ -269,6 +269,10 @@ class SheetDataCreator : ITypeFuncVisitor<RowColumnSheet, TitleRow, DType>
             TitleRow field = row.GetSubTitleNamedRow(fname);
             if (field == null)
             {
+                if (f.Tags.ContainsKey("MythEnumAdded")) // 这里数据是代码生成的，不需要从表中读，也不需要在表里配
+                {
+                    continue;
+                }
                 throw new Exception($"bean:'{bean.FullName}' 缺失 列:'{fname}'，请检查是否写错或者遗漏");
             }
             try

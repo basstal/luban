@@ -2,6 +2,7 @@ using Luban.CodeTarget;
 using Luban.DataTarget;
 using Luban.Defs;
 using Luban.L10N;
+using Luban.Myth;
 using Luban.OutputSaver;
 using Luban.PostProcess;
 using Luban.RawDefs;
@@ -64,11 +65,15 @@ public class DefaultPipeline : IPipeline
             TimeZone = _args.TimeZone,
         };
         _genCtx.Init(generationCtxBuilder);
+        s_logger.Info("do myth enhance context");
+        MythManager.Ins.Init();
+        MythManager.Ins.EnhanceScheme(_genCtx);
     }
 
     protected void LoadDatas()
     {
         _genCtx.LoadDatas();
+        MythManager.Ins.EnhanceLoadDatasAndValidate(_genCtx);
         DoValidate();
         ProcessL10N();
     }

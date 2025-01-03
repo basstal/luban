@@ -20,9 +20,14 @@
         /// <summary>
         /// {{escape_comment item.comment_or_alias}}
         /// </summary>
+        [PandaMix.EnumLabel("{{escape_comment item.comment_or_alias}}")]
 {{~end~}}
         {{format_enum_item_name __code_style item.name}} = {{item.value}},
         {{~end~}}
+        
+{{__editable_content.begin}}   
+{{__editable_content.content}}
+{{__editable_content.end}}
     }
 
 {{namespace_with_grace_end __namespace_with_top_module}} 

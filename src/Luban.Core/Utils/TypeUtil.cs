@@ -1,10 +1,10 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Luban.Utils;
 
 public static class TypeUtil
 {
-
     public static (string, string) SplitFullName(string fullName)
     {
         int index = fullName.LastIndexOf('.');
@@ -28,10 +28,13 @@ public static class TypeUtil
                 {
                     reverse.Add(".");
                 }
+
                 reverse.Add(e.ToString());
             }
+
             ++index;
         }
+
         return string.Join("", reverse);
     }
 
@@ -41,6 +44,7 @@ public static class TypeUtil
         {
             return "";
         }
+
         return string.Join("", module.Split('.').Select(n => $"namespace {n} {{"));
     }
 
@@ -50,6 +54,7 @@ public static class TypeUtil
         {
             return "";
         }
+
         return string.Join("", module.Split('.').Select(n => $"}}"));
     }
 
@@ -69,6 +74,7 @@ public static class TypeUtil
         {
             return "";
         }
+
         return string.Join("", module.Split('.').Select(n => $"export namespace {n} {{"));
     }
 
@@ -78,6 +84,7 @@ public static class TypeUtil
         {
             return "";
         }
+
         return MakeCppNamespaceEnd(module);
     }
 
@@ -87,10 +94,12 @@ public static class TypeUtil
         {
             return name;
         }
+
         if (string.IsNullOrEmpty(name))
         {
             return module;
         }
+
         return module + "." + name;
     }
 
@@ -106,6 +115,7 @@ public static class TypeUtil
         {
             return "";
         }
+
         return string.Join("", module.Split('.').Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => UpperCaseFirstChar(s)));
     }
 
@@ -145,10 +155,12 @@ public static class TypeUtil
         {
             return subModule;
         }
+
         if (string.IsNullOrWhiteSpace(subModule))
         {
             return module;
         }
+
         return module + "." + subModule;
     }
 
@@ -230,6 +242,7 @@ public static class TypeUtil
         {
             s.Append(UpperCaseFirstChar(words[i]));
         }
+
         return s.ToString();
     }
 
@@ -241,6 +254,25 @@ public static class TypeUtil
     public static string ToUnderScores(string name)
     {
         return name;
+    }
+
+    // 找到 enumType.Name 除第一个字母以外的大写字母，在大写字母前加入一个 _ 下划线，并将结果转为小写字母
+    public static string AddUnderscoreBeforeUppercase(string enumTypeName)
+    {
+        // 如果字符串为空或长度为1，直接返回
+        if (string.IsNullOrEmpty(enumTypeName) || enumTypeName.Length == 1)
+        {
+            return enumTypeName.ToLower(); // 如果只有一个字符，直接转为小写
+        }
+
+        // 正则表达式匹配大写字母，排除第一个字母
+        string pattern = @"(?<=[a-z])[A-Z]";
+
+        // 使用正则替换匹配的大写字母，前面添加 _
+        string result = Regex.Replace(enumTypeName, pattern, "_$0");
+
+        // 将结果转换为小写
+        return result.ToLower();
     }
 
     public static string ToCsStyleName(string orginName)
@@ -257,6 +289,7 @@ public static class TypeUtil
         {
             s.Append(UpperCaseFirstChar(words[i]));
         }
+
         return s.ToString();
     }
 
@@ -268,6 +301,7 @@ public static class TypeUtil
         {
             s.Append(UpperCaseFirstChar(word));
         }
+
         return s.ToString();
     }
 
@@ -279,6 +313,7 @@ public static class TypeUtil
         {
             s.Append(UpperCaseFirstChar(word));
         }
+
         return s.ToString();
     }
 

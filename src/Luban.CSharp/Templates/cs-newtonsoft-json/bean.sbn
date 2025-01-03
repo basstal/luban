@@ -144,6 +144,8 @@ public {{class_modifier __bean}} partial class {{__name}} : {{if parent_def_type
         {{line}}
                 {{~end~}}
         {{~end~}}
+        
+        // TODO:没有做数组收集，如果需要再做
     }
 
     public override string ToString()

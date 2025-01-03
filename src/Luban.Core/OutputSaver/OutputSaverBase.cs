@@ -6,22 +6,25 @@ public abstract class OutputSaverBase : IOutputSaver
 {
     public virtual string Name => GetType().GetCustomAttribute<OutputSaverAttribute>().Name;
 
-    protected virtual string GetOutputDir(OutputFileManifest manifest)
+    public virtual string GetOutputDir(OutputFileManifest manifest)
     {
-        string optionName = manifest.OutputType == OutputType.Code
+        return GetOutputDir(manifest.OutputType, manifest.TargetName);
+    }
+
+    public virtual string GetOutputDir(OutputType outputType, string targetName)
+    {
+        string optionName = outputType == OutputType.Code
             ? BuiltinOptionNames.OutputCodeDir
             : BuiltinOptionNames.OutputDataDir;
-        return EnvManager.Current.GetOption($"{manifest.TargetName}", optionName, true);
+        return EnvManager.Current.GetOption($"{targetName}", optionName, true);
     }
 
     protected virtual void BeforeSave(OutputFileManifest outputFileManifest, string outputDir)
     {
-
     }
 
     protected virtual void PostSave(OutputFileManifest outputFileManifest, string outputDir)
     {
-
     }
 
     public virtual void Save(OutputFileManifest outputFileManifest)
@@ -36,6 +39,7 @@ public abstract class OutputSaverBase : IOutputSaver
                 SaveFile(outputFileManifest, outputDir, outputFile);
             }));
         }
+
         Task.WaitAll(tasks.ToArray());
         PostSave(outputFileManifest, outputDir);
     }

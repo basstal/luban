@@ -53,6 +53,8 @@ public partial class {{__name}}
             _dataList.Add(_v);
             _dataMap.Add(_v.{{format_property_name __code_style __table.index_field.name}}, _v);
          }
+         
+         // TODO:没有支持 group by
     }
 
 
@@ -114,6 +116,8 @@ public partial class {{__name}}
         {{~end~}}
         }
         {{~end~}}
+        // TODO:没有支持 group by
+        
     }
 
     public System.Collections.Generic.List<{{declaring_type_name __value_type}}> DataList => _dataList;
@@ -145,6 +149,8 @@ public partial class {{__name}}
         int n = _buf.Count;
         if (n != 1) throw new SerializationException("table mode=one, but size != 1");
         {{deserialize '_data' '_buf[0]' __value_type}}
+        // TODO:没有支持 group by
+        
     }
 
 

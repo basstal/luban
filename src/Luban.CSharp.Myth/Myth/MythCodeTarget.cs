@@ -8,7 +8,7 @@ using Scriban.Runtime;
 [CodeTarget("myth")]
 public class MythCodeTarget : CsharpCodeTargetBase
 {
-    public OutputFile GenerateMyth(GenerationContext ctx, ExpressionProcessResult result, DefBean bean)
+    public OutputFile GenerateMyth(GenerationContext ctx, ExpressionProcessResult result, DefBean bean, HashSet<GetterInfo> getterInfos)
     {
         var writer = new CodeWriter();
         var template = GetTemplate("MythTemplate");
@@ -34,6 +34,8 @@ public class MythCodeTarget : CsharpCodeTargetBase
             { "__valueCallMappings", result.valueCallMappings },
             { "__delegateTypesMapping", result.delegateTypesMapping },
             { "__constValues", result.constValues },
+            { "__constValueGetters", result.constValueGetters },
+            { "__getterInfos", getterInfos }
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));

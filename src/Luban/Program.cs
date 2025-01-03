@@ -106,7 +106,7 @@ internal static class Program
         }
         do
         {
-            s_logger.Error("===> {}", e.Message);
+            s_logger.Error("===> {}\n{}", e.Message, e.StackTrace);
             e = e.InnerException;
         } while (e != null);
     }

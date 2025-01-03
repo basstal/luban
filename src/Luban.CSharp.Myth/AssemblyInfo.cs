@@ -1,5 +1,3 @@
-
-
 using Luban;
 
 [assembly: RegisterBehaviour]

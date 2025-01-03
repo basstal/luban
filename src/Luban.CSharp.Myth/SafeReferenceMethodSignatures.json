@@ -1,0 +1,51 @@
+{
+  "constants": [
+    {
+      "types": [
+        "Integer"
+      ]
+    },
+    {
+      "types": [
+        "Integer",
+        "Integer"
+      ]
+    },
+    {
+      "types": [
+        "Integer",
+        "Bool"
+      ]
+    }
+  ],
+  "methods": [
+    {
+      "parameters": [
+        "Integer"
+      ]
+    },
+    {
+      "parameters": [
+        "Integer",
+        "Bool"
+      ]
+    },
+    {
+      "parameters": [
+        "Integer",
+        "Integer"
+      ]
+    },
+    {
+      "parameters": [
+        "ListInteger"
+      ]
+    },
+    {
+      "parameters": [
+        "ListInteger",
+        "Bool"
+      ]
+    }
+  ]
+}

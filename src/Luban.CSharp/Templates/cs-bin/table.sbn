@@ -27,6 +27,7 @@ using Luban;
         paramList = __table.index_list |array.each do; ret $0.index_field.name; end
         ret array.join paramList ', '
     end
+    
 }}
 {{namespace_with_grace_begin __namespace_with_top_module}}
 {{~if __table.comment != '' ~}}
@@ -36,9 +37,23 @@ using Luban;
 {{~end~}}
 public partial class {{__name}}
 {
+#region GroupBy
+    {{~ for group_by_fields in __group_by ~}}
+    // 存储当前字段组合的分组数据
+    private readonly System.Collections.Generic.Dictionary<{{group_by_fields.dict_key_type}}, System.Collections.Generic.List<{{declaring_type_name value_type}}>> _groupedData_{{group_by_fields.group_name}};
+    
+    public System.Collections.Generic.List<{{declaring_type_name value_type}}> GetByGroup{{format_property_name __code_style group_by_fields.group_name}}({{group_by_fields.getter_parameters}})
+    {
+        var groupKey = {{~group_by_fields.getter_parameters_to_group_key~}};
+        return _groupedData_{{group_by_fields.group_name}}.ContainsKey(groupKey) ? _groupedData_{{group_by_fields.group_name}}[groupKey] : null;
+    }
+    {{~ end ~}}
+#endregion 
+
     {{~if __table.is_map_table ~}}
     private readonly System.Collections.Generic.Dictionary<{{declaring_type_name key_type}}, {{declaring_type_name value_type}}> _dataMap;
     private readonly System.Collections.Generic.List<{{declaring_type_name value_type}}> _dataList;
+    
     
     public {{__name}}(ByteBuf _buf)
     {
@@ -52,8 +67,37 @@ public partial class {{__name}}
             _dataList.Add(_v);
             _dataMap.Add(_v.{{format_property_name __code_style __table.index_field.name}}, _v);
         }
-    }
 
+#region GroupBy
+
+        // 这里添加对 group by 的支持，group by 按照某个 group by 的字段中的值（目前仅支持 int/string 字段）将它们放到一个 Dictionary<int, List<T>> 中
+        // 并添加对应的接口可以根据 index 的 key 获取对应 List<T>
+        {{~ for group_by_fields in __group_by ~}}
+        // 初始化分组数据字典
+        _groupedData_{{group_by_fields.group_name}} = new System.Collections.Generic.Dictionary<{{group_by_fields.dict_key_type}}, System.Collections.Generic.List<{{declaring_type_name value_type}}>>();
+    
+        // 填充分组数据
+        foreach (var item in _dataList)
+        {
+            // 从 item 中创建 key 值
+            var groupKey = (
+            {{~ for field_def in group_by_fields.fields ~}}
+                item.{{format_property_name __code_style field_def.name}}{{~ if !for.last ~}},{{~ end ~}}
+            {{~ end ~}}
+            );
+            if (!_groupedData_{{group_by_fields.group_name}}.ContainsKey(groupKey))
+            {
+                _groupedData_{{group_by_fields.group_name}}[groupKey] = new System.Collections.Generic.List<{{declaring_type_name value_type}}>();
+            }
+            _groupedData_{{group_by_fields.group_name}}[groupKey].Add(item);
+        }
+        {{~ end ~}}
+#endregion 
+        
+    }
+    
+    
+    
     public System.Collections.Generic.Dictionary<{{declaring_type_name key_type}}, {{declaring_type_name value_type}}> DataMap => _dataMap;
     public System.Collections.Generic.List<{{declaring_type_name value_type}}> DataList => _dataList;
 
@@ -111,6 +155,33 @@ public partial class {{__name}}
     {{~end~}}
     }
     {{~end~}}
+    
+    
+#region GroupBy
+
+        // 这里添加对 group by 的支持，group by 按照某个 group by 的字段中的值（目前仅支持 int/string 字段）将它们放到一个 Dictionary<int, List<T>> 中
+        // 并添加对应的接口可以根据 index 的 key 获取对应 List<T>
+        {{~ for group_by_fields in __group_by ~}}
+        // 初始化分组数据字典
+        _groupedData_{{group_by_fields.group_name}} = new System.Collections.Generic.Dictionary<{{group_by_fields.dict_key_type}}, System.Collections.Generic.List<{{declaring_type_name value_type}}>>();
+    
+        // 填充分组数据
+        foreach (var item in _dataList)
+        {
+            // 从 item 中创建 key 值
+            var groupKey = (
+            {{~ for field_def in group_by_fields.fields ~}}
+                item.{{format_property_name __code_style field_def.name}}{{~ if !for.last ~}},{{~ end ~}}
+            {{~ end ~}}
+            );
+            if (!_groupedData_{{group_by_fields.group_name}}.ContainsKey(groupKey))
+            {
+                _groupedData_{{group_by_fields.group_name}}[groupKey] = new System.Collections.Generic.List<{{declaring_type_name value_type}}>();
+            }
+            _groupedData_{{group_by_fields.group_name}}[groupKey].Add(item);
+        }
+        {{~ end ~}}
+#endregion
     }
 
     public System.Collections.Generic.List<{{declaring_type_name value_type}}> DataList => _dataList;
@@ -141,6 +212,32 @@ public partial class {{__name}}
         int n = _buf.ReadSize();
         if (n != 1) throw new SerializationException("table mode=one, but size != 1");
         {{deserialize '_buf' '_data' value_type}}
+        
+#region GroupBy
+
+        // 这里添加对 group by 的支持，group by 按照某个 group by 的字段中的值（目前仅支持 int/string 字段）将它们放到一个 Dictionary<int, List<T>> 中
+        // 并添加对应的接口可以根据 index 的 key 获取对应 List<T>
+        {{~ for group_by_fields in __group_by ~}}
+        // 初始化分组数据字典
+        _groupedData_{{group_by_fields.group_name}} = new System.Collections.Generic.Dictionary<{{group_by_fields.dict_key_type}}, System.Collections.Generic.List<{{declaring_type_name value_type}}>>();
+    
+        // 填充分组数据
+        foreach (var item in _dataList)
+        {
+            // 从 item 中创建 key 值
+            var groupKey = (
+            {{~ for field_def in group_by_fields.fields ~}}
+                item.{{format_property_name __code_style field_def.name}}{{~ if !for.last ~}},{{~ end ~}}
+            {{~ end ~}}
+            );
+            if (!_groupedData_{{group_by_fields.group_name}}.ContainsKey(groupKey))
+            {
+                _groupedData_{{group_by_fields.group_name}}[groupKey] = new System.Collections.Generic.List<{{declaring_type_name value_type}}>();
+            }
+            _groupedData_{{group_by_fields.group_name}}[groupKey].Add(item);
+        }
+        {{~ end ~}}
+#endregion 
     }
 
 
