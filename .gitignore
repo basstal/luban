@@ -274,3 +274,4 @@ __pycache__/
 /src/.vscode
 /src/Luban/Properties/*.json
 *.7z
+/Externals

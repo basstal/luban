@@ -1,0 +1,14 @@
+﻿Expression     := OrExpr
+OrExpr         := AndExpr ( "||" AndExpr )*
+AndExpr        := PrimaryExpr ( "&&" PrimaryExpr )*
+PrimaryExpr    := Comparison | "(" Expression ")"
+Comparison     := AddExpr ( (== | != | > | >= | < | <=) AddExpr )?
+// AddExpr这里暂时只做函数/标识符/字面值解析，不支持+ -运算
+AddExpr        := FunctionCallOrIdentifierOrLiteral
+FunctionCallOrIdentifierOrLiteral 
+               := Identifier "(" ArgList? ")" 
+               | Identifier
+               | Literal
+Literal        := IntLiteral | StringLiteral | BoolLiteral
+
+ArgList        := Expression ("," Expression)*

@@ -1,0 +1,14 @@
+﻿int 房间翻新等级(params string);
+bool 房间升级完成(params string);
+int 专业等级(enum);
+int 最大网络小说阅读量();
+int 最大亲密度();
+int 时间();
+int 累计时间();
+int 总资金();
+int 网络小说数量();
+int 家具等级(enum);
+int 梦想等级();
+int 任意专业作品(enum);
+int 娱乐活动累计时间();
+int 专业等级(enum);

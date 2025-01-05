@@ -1,0 +1,208 @@
+using System;
+using System.Collections.Generic;
+{{
+    parent_def_type = __bean.parent_def_type
+    export_fields = __bean.export_fields
+    hierarchy_export_fields = __bean.hierarchy_export_fields
+}}
+
+{{namespace_with_grace_begin __namespace_with_top_module}}
+
+public {{class_modifier __bean}} partial class {{__name}} // : {{if parent_def_type}}{{__bean.parent}}{{else}}Luban.BeanBase{{end}}
+{
+/*
+#region ConstDefinitions
+{{~ for constDefinition in __constDefinitions ~}}
+    {{constDefinition}}
+{{~ end ~}}
+#endregion
+*/
+
+#region Methods
+{{~ for value in __method_values ~}}
+    {{value.item1}}
+{{~ end}}
+
+    public static Dictionary<string, Func<{{__interface_name}}, bool>> MethodMapper = new Dictionary<string, Func<{{__interface_name}}, bool>>()
+    {
+    {{~ for value in __method_values ~}}
+        {    "{{value.item2.condition_key}}", {{value.item2.method_name}} },
+    {{~ end ~}}
+    };
+
+
+
+{{~ for delegateTypeMapping in __delegateTypesMapping ~}}
+/// <summary>
+/// This is a safe reference method, means it won't become missing when myth regenerate.
+/// </summary>
+public static bool Evaluate(string functionName, {{delegateTypeMapping.value.item4}})
+{   
+    {{~if delegateTypeMapping.value.is_empty ~}}
+    {{~else~}}
+    if (m_methodDict{{ delegateTypeMapping.value.item1 }}.TryGetValue(functionName, out var functionCall))
+    {
+        return functionCall({{ delegateTypeMapping.value.item5 }});
+    }
+    {{~end~}}
+#if UNITY_EDITOR
+    UnityEngine.Debug.LogError($"There is not Myth generated function named 【 {functionName} 】!");
+#endif
+    return false;    
+}
+{{~end~}}
+
+#endregion
+
+{{~ for constValue in __constValues ~}}
+    {{constValueList = constValue.value}}
+private static readonly Dictionary<string, {{constValueList[0].item1}}> m_constValue{{constValueList[0].item2}} = new Dictionary<string, {{constValueList[0].item1}}>
+{
+    {{~ for constValueEntry in constValueList ~}}
+    { "{{ constValueEntry.item4 }}", {{ constValueEntry.item3 }} },
+    {{~ end~}}
+};
+{{~ end ~}}
+
+
+{{~ for constValueGetter in __constValueGetters ~}}
+/// <summary>
+/// This is a safe reference method, means it won't become missing when myth regenerate.
+/// </summary>
+public static {{constValueGetter.value.item1}} GetConstValue{{constValueGetter.value.item2}}(string key)
+{
+    {{~ if constValueGetter.value.item3 ~}}
+    if (m_constValue{{constValueGetter.value.item2}}.TryGetValue(key, out var value))
+    {
+        return value;
+    }
+    {{~ end ~}}
+#if UNITY_EDITOR
+    UnityEngine.Debug.LogError($"There is not Myth generated constant value named 【 {key} 】!");
+#endif
+    return {{constValueGetter.value.item4 ~}};
+}
+/// <summary>
+/// This is a safe reference method, means it won't become missing when myth regenerate.
+/// </summary>
+public static bool IsConstValue{{constValueGetter.value.item2}}Exist(string key)
+{
+{{~ if constValueGetter.value.item3 ~}}
+    return m_constValue{{constValueGetter.value.item2}}.ContainsKey(key);
+{{~ else ~}}
+    return false;
+{{~ end ~}}
+}
+{{~end~}}
+
+
+/*
+// TODO: conditional getter，但是不能根据字段来了，只能根据返回数据类型来
+{{~ for getterInfo in __getterInfos ~}}
+{{~ getter_limits = getterInfo.getter_key_types.size - 1 ~}}
+public static int Get{{~ getterInfo.field_name ~}}ConstValue({{~ for i in 0..getter_limits ~}}
+{{~ getterInfo.getter_key_types[i] }} {{ getterInfo.getter_key_names[i] }}{{~ if i < getter_limits ~}}, {{~ end ~}}
+{{~ end ~}})
+{
+    if (m_constValue{{getterInfo.field_name}}.TryGetValue($"{{~ getterInfo.field_name ~}}{{~ for i in 0..getter_limits ~}}{{"{"}}{{ getterInfo.getter_key_names[i] }}{{"}"}}{{~ end ~}}", out var value))
+    {
+        return value;
+    }
+    throw new ArgumentException($"{{ getterInfo.field_name }} constant with key 【 {{~ for i in 0..getter_limits ~}}{{"{"}}{{ getterInfo.getter_key_names[i] }}{{"}"}}{{~ end ~}} 】 not found.");
+}
+{{~ end ~}}
+*/
+
+/*
+public static Dictionary<string, Func<List<int>, int>> valueCalls = new Dictionary<string, Func<List<int>, int>>
+{
+    {{ __valueCallMappings }}
+};
+
+#region LibraryFunctions
+public static int Max(List<int> values)
+{
+    int maxValue = int.MinValue;
+    for (int i = 0; i < values.Count; i++)
+    {
+        if (values[i] > maxValue)
+        {
+            maxValue = values[i];
+        }
+    }
+
+    return maxValue;
+}
+
+public static int Min(List<int> values)
+{
+    int minValue = int.MaxValue;
+    for (int i = 0; i < values.Count; i++)
+    {
+        if (values[i] < minValue)
+        {
+            minValue = values[i];
+        }
+    }
+
+    return minValue;
+}
+
+public static int Average(List<int> values)
+{
+    if (values.Count == 0)
+    {
+        return 0;
+    }
+
+    int sum = 0;
+    for (int i = 0; i < values.Count; i++)
+    {
+        sum += values[i];
+    }
+
+    return sum / values.Count;
+}
+
+public static bool Any(List<int> values, int target)
+{
+    if (values.Count == 0)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < values.Count; i++)
+    {
+        if (values[i] == target)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+public static bool AllGreatEqual(List<int> values, int target)
+{
+    if (values.Count == 0)
+    {
+        return true;  // 空列表返回 true，因为没有元素违反条件
+    }
+
+    foreach (var value in values)
+    {
+        if (value < target)
+        {
+            return false; // 如果有任何一个值小于 target，则返回 false
+        }
+    }
+
+    return true; // 如果所有值都大于等于 target，则返回 true
+}
+#endregion
+
+*/
+
+}
+
+{{namespace_with_grace_end __namespace_with_top_module}}

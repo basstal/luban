@@ -1,6 +1,6 @@
-public enum ParameterType
-{
-    Integer,
-    ListInteger,
-    Bool
-}
+// public enum ParameterType
+// {
+//     Integer,
+//     ListInteger,
+//     Bool
+// }
