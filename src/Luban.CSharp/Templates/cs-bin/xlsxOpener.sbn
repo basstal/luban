@@ -10,7 +10,7 @@ public class XlsxExplorer
     [MenuItem("数据档/{{~xlsx_info.item1~}}")]
     public static void Open{{~xlsx_info.item2~}}Xlsx()
     {
-        var path = Path.Combine(Directory.GetCurrentDirectory(), "../Externals/xlsx/{{~xlsx_info.item3~}}");
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "{{~xlsx_info.item4~}}", "{{~xlsx_info.item3~}}");
         FileExplorer.ProcessFileOpen(path);
     }
 {{~end~}}

@@ -241,16 +241,19 @@ public abstract class CsharpCodeTargetBase : TemplateCodeTargetBase
     {
         var template = GetTemplate("xlsxOpener");
         var tplCtx = CreateTemplateContext(template);
+        string inputDataDir = GenerationContext.GetInputDataPath();
+        string unityProjectDir = GenerationContext.GlobalConf.UnityProjectDir;
+        var relativePath = Path.GetRelativePath(unityProjectDir, inputDataDir).Replace("\\", "/");
         var xlsxTables = ctx.ExportTables.Select(table =>
         {
             if (table.Tags.TryGetValue("中文名", out var tag))
             {
                 // 这为啥是数组？有啥其他规则嘛？
-                return (tag, table.ValueTType.DefBean.Name, table.InputFiles[0]);
+                return (tag, table.ValueTType.DefBean.Name, table.InputFiles[0], relativePath);
             }
 
             // 这为啥是数组？有啥其他规则嘛？
-            return (table.ValueTType.DefBean.Name, table.ValueTType.DefBean.Name, table.InputFiles[0]);
+            return (table.ValueTType.DefBean.Name, table.ValueTType.DefBean.Name, table.InputFiles[0], relativePath);
         });
         var extraEnvs = new ScriptObject
         {

@@ -12,4 +12,6 @@ public class LubanConfig
     public List<SchemaFileInfo> Imports { get; set; }
 
     public string InputDataDir { get; set; }
+    
+    public string UnityProjectDir { get; set; }
 }

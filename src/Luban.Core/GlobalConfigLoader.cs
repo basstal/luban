@@ -52,6 +52,8 @@ public class GlobalConfigLoader : IConfigLoader
         public string DataDir { get; set; }
 
         public List<Target> Targets { get; set; }
+        
+        public string UnityProjectDir { get; set; }
     }
 
     public LubanConfig Load(string fileName)
@@ -69,6 +71,7 @@ public class GlobalConfigLoader : IConfigLoader
 
         var configFileName = Path.GetFileName(fileName);
         var dataInputDir = Path.Combine(_curDir, globalConf.DataDir);
+        var unityProjectDir = Path.Combine(_curDir, globalConf.UnityProjectDir).Replace("\\", "/");
         List<RawGroup> groups = globalConf.Groups.Select(g => new RawGroup() { Names = g.Names, IsDefault = g.Default }).ToList();
         List<RawTarget> targets = globalConf.Targets.Select(t => new RawTarget() { Name = t.Name, Manager = t.Manager, Groups = t.Groups, TopModule = t.TopModule }).ToList();
 
@@ -96,6 +99,7 @@ public class GlobalConfigLoader : IConfigLoader
             Groups = groups,
             Targets = targets,
             Imports = importFiles,
+            UnityProjectDir = unityProjectDir,
         };
     }
 
