@@ -3,13 +3,12 @@ using Luban.CodeTarget;
 using Luban.CSharp.CodeTarget;
 using Luban.Defs;
 using Luban.Utils;
-using Myth;
 using Scriban.Runtime;
 
 [CodeTarget("myth")]
 public class MythCodeTarget : CsharpCodeTargetBase
 {
-    public OutputFile GenerateMyth(GenerationContext ctx, Dictionary<string, (string, MythMetadata)> result, DefBean bean, string interfaceName)
+    public OutputFile GenerateMyth(GenerationContext ctx, Dictionary<string, (string, string)> result, DefBean bean, string interfaceName)
     {
         var writer = new CodeWriter();
         var template = GetTemplate("MythTemplate1");

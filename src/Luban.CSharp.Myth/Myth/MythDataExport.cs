@@ -15,6 +15,10 @@ public class MythDataExport : DataExporterBase
         // 基础的表格数据导出
         base.Handle(ctx, dataTarget, manifest);
 
+        if (!MythGenerationContextEnhance.MythGenerationEnabled)
+        {
+            return;
+        }
 
         // 从表格数据中读取需要导出 Myth 代码的数据，并导出 Myth 代码和 Myth 元数据
         HandleMyth(ctx);
@@ -126,7 +130,7 @@ public class MythDataExport : DataExporterBase
         {
             // var roslynExpressionProcessor = new RoslynExpressionProcessor();
             // var expressions = new List<ExpressionInfo>();
-            var result = new Dictionary<string, (string, MythMetadata)>();
+            var result = new Dictionary<string, (string, string)>();
             // 每一行数据
             foreach (var record in ctx.GetTableExportDataList(mythTable))
             {
@@ -176,13 +180,13 @@ public class MythDataExport : DataExporterBase
                         // 3. 生成 C# 代码
                         string methodName = CreateMythMethodName(mythTable, record, defField);
                         string code = MythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast);
-                        var metadata = MythMetadataCollector.Collect(ast, dStringMythContent.Value, methodName, methodName);
+                        // var metadataList = MythMetadataCollector.Collect(ast, dStringMythContent.Value, methodName, methodName);
                         if (result.ContainsKey(methodName))
                         {
                             throw new InvalidOperationException($"生成的方法名 {methodName} 重复");
                         }
 
-                        result.Add(methodName, (code, metadata));
+                        result.Add(methodName, (code, methodName));
                     }
                     else
                     {
@@ -239,7 +243,7 @@ public class MythDataExport : DataExporterBase
         saver.Save(outputManifest);
     }
 
-    private string CreateMythMethodName(DefTable mythTable, Record record, DefField defField)
+    public static string CreateMythMethodName(DefTable mythTable, Record record, DefField defField)
     {
         var recordIndexDTypes = mythTable.IndexList.Select(indexInfo => record.Data.Fields[indexInfo.IndexFieldIdIndex]);
         var recordIndexValue = string.Join("_", recordIndexDTypes.Select(recordIndexDType =>

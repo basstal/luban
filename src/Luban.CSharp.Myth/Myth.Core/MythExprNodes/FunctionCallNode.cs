@@ -4,12 +4,13 @@ public class FunctionCallNode : MythExprNode
 {
     public string FuncName;
 
-    public List<MythExprNode> Arguments = new List<MythExprNode>();
+    public List<MythExprNode?> Arguments = new List<MythExprNode?>();
 
-    // 假设本示例函数调用只返回 int 或 bool
-    public MythValueType ReturnType = MythValueType.Int;
+    public MythValueType ReturnType = MythValueType.Unknown;
 
     public override MythValueType ValueType => ReturnType;
+
+    public FunctionSignature FunctionSignature { get; set; }
 
     public FunctionCallNode(string funcName)
     {

@@ -26,7 +26,7 @@ public {{class_modifier __bean}} partial class {{__name}} // : {{if parent_def_t
     public static Dictionary<string, Func<{{__interface_name}}, bool>> MethodMapper = new Dictionary<string, Func<{{__interface_name}}, bool>>()
     {
     {{~ for value in __method_values ~}}
-        {    "{{value.item2.condition_key}}", {{value.item2.method_name}} },
+        {    "{{value.item2}}", {{value.item2}} },
     {{~ end ~}}
     };
 

@@ -1,11 +1,8 @@
-﻿using Myth;
-
-namespace Myth
+﻿namespace Myth
 {
     public static class MythFunctionTable
     {
-        public static Dictionary<string, FunctionSignature> Signatures
-            = new Dictionary<string, FunctionSignature>();
+        public static Dictionary<string, FunctionSignature> Signatures = new Dictionary<string, FunctionSignature>();
 
         /// <summary>
         /// 从文本文件加载函数签名到 MythFunctionTable.Signatures
@@ -18,10 +15,11 @@ namespace Myth
         public static void LoadFromFile(string filePath)
         {
             // 加载前清空，避免累加
-            MythFunctionTable.Signatures.Clear();
+            Signatures.Clear();
 
-            foreach (var line in File.ReadLines(filePath))
+            foreach (var lineRaw in File.ReadLines(filePath))
             {
+                var line = CharMappingPreprocess.Preprocess(lineRaw);
                 var trimmed = line.Trim();
                 // 跳过空行或注释行(若需要)
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
@@ -38,31 +36,38 @@ namespace Myth
 
                 try
                 {
-                    // 1) 解析返回类型
+                    // 1) Parse return type
                     int firstSpaceIndex = trimmed.IndexOf(' ');
                     if (firstSpaceIndex < 0)
-                        throw new Exception("无法解析: 缺少返回类型和函数名之间的空格");
+                        throw new Exception("缺少返回类型，或者返回类型与函数名中缺少空格");
 
                     string returnTypeStr = trimmed.Substring(0, firstSpaceIndex).Trim();
                     MythValueType returnType = ParseType(returnTypeStr);
 
-                    // 2) 剩余部分(含函数名和括号)
+                    // 2) Remaining part (including function name and parentheses)
                     string rest = trimmed.Substring(firstSpaceIndex).Trim();
                     int lParenIndex = rest.IndexOf('(');
+
+                    string funcName;
+                    string insideParen = "";
+
                     if (lParenIndex < 0)
-                        throw new Exception("缺少 '('");
+                    {
+                        // No parentheses, only function name
+                        funcName = rest;
+                    }
+                    else
+                    {
+                        funcName = rest.Substring(0, lParenIndex).Trim();
+                        int rParenIndex = rest.IndexOf(')', lParenIndex + 1);
+                        if (rParenIndex < 0)
+                            throw new Exception("缺少 ')'");
 
-                    string funcName = rest.Substring(0, lParenIndex).Trim();
+                        // Inside parentheses
+                        insideParen = rest.Substring(lParenIndex + 1, rParenIndex - (lParenIndex + 1)).Trim();
+                    }
 
-                    int rParenIndex = rest.IndexOf(')', lParenIndex + 1);
-                    if (rParenIndex < 0)
-                        throw new Exception("缺少 ')'");
-
-                    // 括号内部
-                    string insideParen = rest.Substring(lParenIndex + 1, rParenIndex - (lParenIndex + 1)).Trim();
-                    // 可能为 "", "params string", "int", "int, bool", etc.
-
-                    // 构造签名
+                    // Construct signature
                     var signature = new FunctionSignature(funcName, returnType);
 
                     // 3) 解析参数列表
@@ -84,12 +89,12 @@ namespace Myth
                         if (paramChunks.Count == 1)
                         {
                             var chunk = paramChunks[0];
-                            if (chunk.StartsWith("params"))
+                            if (chunk.StartsWith("多个"))
                             {
-                                // 形如 "params string"
+                                // 形如 "多个字符串"
                                 signature.IsParams = true;
                                 // 取出 "string"
-                                var afterParams = chunk.Substring("params".Length).Trim();
+                                var afterParams = chunk.Substring("多个".Length).Trim();
                                 MythValueType t = ParseType(afterParams);
                                 signature.ParamTypes.Add(t);
                             }
@@ -108,10 +113,10 @@ namespace Myth
 
                             foreach (var chunk in paramChunks)
                             {
-                                if (chunk.StartsWith("params"))
+                                if (chunk.StartsWith("多个"))
                                 {
                                     // 不允许
-                                    throw new Exception($"多参数模式下不允许使用 'params': {chunk}");
+                                    throw new Exception($"多参数模式下不允许使用 \"多个\" 关键字: {chunk}");
                                 }
 
                                 // 普通类型
@@ -138,10 +143,11 @@ namespace Myth
         {
             switch (typeStr)
             {
-                case "int": return MythValueType.Int;
-                case "bool": return MythValueType.Bool;
-                case "string": return MythValueType.String;
-                case "enum": return MythValueType.Enum;
+                case "整数": return MythValueType.Int;
+                case "万分比整数": return MythValueType.IntTenThousandth;
+                case "布尔": return MythValueType.Bool;
+                case "字符串": return MythValueType.String;
+                case "枚举": return MythValueType.Enum;
                 default: return MythValueType.Unknown;
             }
         }

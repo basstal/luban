@@ -15,12 +15,10 @@ public class MythParser
     {
         // 对应 Expression -> OrExpr
         var result = ParseOrExpr();
-
-        MythFunctionTable.LoadFromFile(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Myth.Core/FunctionCallMapping.txt"));
         // 分析 AST
-        MythSemanticAnalyzer.AnalyzeAST(result);
+        result = MythSemanticAnalyzer.AnalyzeAST(result);
 
-        return result;
+        return result!;
     }
 
     public MythExprNode ParseExpression()
@@ -115,6 +113,11 @@ public class MythParser
             Advance();
             return new LiteralNode(token.Text, MythValueType.Bool);
         }
+        else if (token.Type == MythTokenType.FloatLiteral)
+        {
+            Advance();
+            return new LiteralNode(token.Text, MythValueType.Float);
+        }
 
         // 如果都不是，返回一个空节点(简化处理)
         Advance();
@@ -189,9 +192,9 @@ public class MythParser
             case MythTokenType.Equal: return MythCompareOp.Equal;
             case MythTokenType.NotEqual: return MythCompareOp.NotEqual;
             case MythTokenType.Greater: return MythCompareOp.Greater;
-            case MythTokenType.GreaterEq: return MythCompareOp.GreaterEq;
+            case MythTokenType.GreaterEq: return MythCompareOp.GreaterEqual;
             case MythTokenType.Less: return MythCompareOp.Less;
-            case MythTokenType.LessEq: return MythCompareOp.LessEq;
+            case MythTokenType.LessEq: return MythCompareOp.LessEqual;
             default:
                 throw new Exception("Unknown compare op token");
         }

@@ -1,8 +1,8 @@
-﻿
+﻿// 更新这里的同时也需要更新 myth.xml  MythEvaluateType 枚举类型
 public interface {{__interface_name}}
 {
     int GetInt(string key);
     bool GetBool(string key);
-    int EvalFunction(string funcName, params object args);
-    bool EvalFunctionReturnBool(string funcName, params object args);
+    int EvalFunction(string funcName, params object[] args);
+    bool EvalFunctionReturnBool(string funcName, params object[] args);
 }

@@ -131,15 +131,6 @@ public {{class_modifier __bean}} partial class {{__name}} : {{if parent_def_type
    public readonly {{declaring_type_name group.ctype}}[] {{format_property_name __code_style group.array_field.name}};
    {{~ end ~}}
    
-{{~if __myth_enum_parsing_fields~}}
-// TODO:这个不用了，直接注入到原来 bean 的生成，并且数据也注入进生成的 bin 中
-   #region MythEnumParsing
-   {{~for field in __myth_enum_parsing_fields~}}
-     public readonly {{declaring_type_name field.ctype}} {{format_property_name __code_style field.name}};
-   {{~end~}}
-   #endregion
-{{~end~}}
-   
 {{~if !__bean.is_abstract_type && !__bean.is_value_type~}}
     public const int __ID__ = {{__bean.id}};
     public override int GetTypeId() => __ID__;

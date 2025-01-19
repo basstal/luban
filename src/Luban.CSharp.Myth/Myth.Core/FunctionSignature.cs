@@ -18,5 +18,16 @@
             Name = name;
             ReturnType = ret;
         }
+
+        public static bool ShouldCastToTenThousandth(LiteralNode ln, MythExprNode parent)
+        {
+            if (!(parent is ComparisonNode comparisonNode))
+            {
+                return false;
+            }
+
+            MythExprNode node = comparisonNode.Left == ln ? comparisonNode.Right! : comparisonNode.Left!;
+            return node is FunctionCallNode fn && fn.ReturnType == MythValueType.IntTenThousandth;
+        }
     }
 }

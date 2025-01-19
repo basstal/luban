@@ -2,9 +2,9 @@
 
 public class ComparisonNode : MythExprNode
 {
-    public MythExprNode Left;
+    public MythExprNode? Left;
     public MythCompareOp Operator;
-    public MythExprNode Right;
+    public MythExprNode? Right;
 
     // 比较运算返回 bool
     public override MythValueType ValueType => MythValueType.Bool;

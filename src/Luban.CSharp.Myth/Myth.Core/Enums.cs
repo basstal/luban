@@ -2,26 +2,29 @@
 
 public enum MythValueType
 {
+    Unknown,
     Int,
+    IntTenThousandth,
+    Float,
     Bool,
     String,
     Enum,
-    NoArgumentFunctionCall,
-    Unknown
 }
 
 public enum MythCompareOp
 {
+    Unknown,
     Equal,
     NotEqual,
     Greater,
-    GreaterEq,
+    GreaterEqual,
     Less,
-    LessEq
+    LessEqual,
 }
 
 public enum MythLogicalOp
 {
+    Unknown,
     And,
     Or
 }
@@ -31,9 +34,9 @@ public enum MythTokenType
     Unknown = 0,
     Identifier = 1,
     IntLiteral = 2,
+    FloatLiteral = 18,
     StringLiteral = 3,
     BoolLiteral = 4,
-    EnumLiteral = 17,
 
     // 运算符
     Equal = 5, // ==

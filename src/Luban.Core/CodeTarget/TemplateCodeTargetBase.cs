@@ -107,29 +107,32 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
 
     List<ExportArray> GetExportArrayGroups(GenerationContext ctx, DefBean bean)
     {
-        var exportFields = bean.GetExportFields();
-        var exportArray = exportFields.Where(defField => defField.Tags.ContainsKey("array")).ToArray();
-        var groups = exportArray.GroupBy(defField => defField.CType);
         var result = new List<ExportArray>();
-        foreach (var group in groups)
+        var exportFields = bean.GetExportFields();
+        var exportArrayGroups = exportFields.Where(defField => defField.Tags.ContainsKey("array")).GroupBy(defField => defField.Tags["array"]);
+        foreach (var exportArray in exportArrayGroups)
         {
-            var defFields = group.ToArray();
-            var defFieldNames = defFields.Select(defField => defField.Name);
-            // 取 defFieldNames 字符串的最长公共前缀
-            string longestCommonPrefix = defFieldNames.Aggregate(
-                (prefix, next) => new string(prefix.Zip(next, (c1, c2) => c1 == c2 ? c1 : '\0').TakeWhile(c => c != '\0').ToArray())
-            );
-            longestCommonPrefix = $"{longestCommonPrefix.TrimEnd('_')}_array";
-            var rawField = new RawField()
+            var groups = exportArray.GroupBy(defField => defField.CType);
+            foreach (var group in groups)
             {
-                Name = longestCommonPrefix,
-                Type = defFields[0].Type,
-                Comment = "",
-                Tags = new Dictionary<string, string>(),
-                NotNameValidation = false,
-                Groups = new List<string>()
-            };
-            result.Add(new ExportArray() { CType = group.Key, DefFields = defFields, ArrayField = new DefField(defFields[0].HostType, rawField, 0), });
+                var defFields = group.ToArray();
+                var defFieldNames = defFields.Select(defField => defField.Name);
+                // 取 defFieldNames 字符串的最长公共前缀
+                string longestCommonPrefix = defFieldNames.Aggregate(
+                    (prefix, next) => new string(prefix.Zip(next, (c1, c2) => c1 == c2 ? c1 : '\0').TakeWhile(c => c != '\0').ToArray())
+                );
+                longestCommonPrefix = $"{longestCommonPrefix.TrimEnd('_')}_array";
+                var rawField = new RawField()
+                {
+                    Name = longestCommonPrefix,
+                    Type = defFields[0].Type,
+                    Comment = "",
+                    Tags = new Dictionary<string, string>(),
+                    NotNameValidation = false,
+                    Groups = new List<string>()
+                };
+                result.Add(new ExportArray() { CType = group.Key, DefFields = defFields, ArrayField = new DefField(defFields[0].HostType, rawField, 0), });
+            }
         }
 
         return result;
@@ -157,7 +160,6 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
             { "__parent_def_type", bean.ParentDefType },
             { "__code_style", CodeStyle },
             { "export_array_groups", exportArrayGroups },
-            // { "__myth_enum_parsing_fields", mythEnumParsingFields }
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));
@@ -191,7 +193,8 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
             { "__enum", @enum },
             { "__this", @enum },
             { "__code_style", CodeStyle },
-            { "__editable_content", editableContent }
+            { "__editable_content", editableContent },
+            { "__generate_alias_mapper", @enum.HasTag("GenerateAliasMapper") },
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));

@@ -149,7 +149,7 @@ public abstract class CsharpCodeTargetBase : TemplateCodeTargetBase
         {
             // 将 group.Value DefField 中的 CType 拼为一个元组字符串
             var dictKeyType = CsharpTemplateExtension.DeclaringTypeName(group.Value[0].CType);
-            var getterParametersToGroupKey = group.Value[0].Name;
+            var getterParametersToGroupKey = TypeUtil.ToCsStyleName(group.Value[0].Name);
             if (group.Value.Count > 1)
             {
                 dictKeyType = $"({string.Join(", ", group.Value.Select(defField => CsharpTemplateExtension.DeclaringTypeName(defField.CType)))})";

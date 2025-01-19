@@ -13,7 +13,7 @@ public class LiteralNode : MythExprNode
     private MythValueType _litType;
 
     public override MythValueType ValueType => _litType;
-    public FunctionSignature NoArgumentFunctionSignature { get; set; }
+    // public FunctionSignature NoArgumentFunctionSignature { get; set; }
 
     public LiteralNode(string rawValue, MythValueType litType)
     {

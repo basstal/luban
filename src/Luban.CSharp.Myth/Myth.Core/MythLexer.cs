@@ -7,49 +7,14 @@ public class MythLexer
     private string _input;
     private int _pos;
     private int _length;
-    private Dictionary<char, char> _charMapping;
 
     public MythLexer(string input)
     {
-        string charMappingFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Myth.Core/CharMapping.txt");
-        _charMapping = LoadCharMapping(charMappingFilePath);
-        _input = PreprocessInput(input);
-        _length = input.Length;
+        _input = CharMappingPreprocess.Preprocess(input);
+        _length = _input.Length;
         _pos = 0;
     }
 
-    private Dictionary<char, char> LoadCharMapping(string filePath)
-    {
-        var mapping = new Dictionary<char, char>();
-        foreach (var line in File.ReadAllLines(filePath))
-        {
-            var parts = line.Split('=');
-            if (parts.Length == 2 && parts[0].Length == 1 && parts[1].Length == 1)
-            {
-                mapping[parts[0][0]] = parts[1][0];
-            }
-        }
-
-        return mapping;
-    }
-
-    private string PreprocessInput(string input)
-    {
-        var sb = new StringBuilder(input.Length);
-        foreach (var c in input)
-        {
-            if (_charMapping.TryGetValue(c, out var mappedChar))
-            {
-                sb.Append(mappedChar);
-            }
-            else
-            {
-                sb.Append(c);
-            }
-        }
-
-        return sb.ToString();
-    }
 
     public List<MythToken> Tokenize()
     {
@@ -72,7 +37,7 @@ public class MythLexer
             }
 
             // 2. 数字
-            if (char.IsDigit(c))
+            if (char.IsDigit(c) || (c == '.' && char.IsDigit(PeekNext())))
             {
                 tokens.Add(ReadNumber());
                 continue;
@@ -211,12 +176,24 @@ public class MythLexer
     private MythToken ReadNumber()
     {
         int start = _pos;
-        while (!IsEnd() && char.IsDigit(Peek()))
+        bool hasDecimalPoint = false;
+
+        while (!IsEnd() && (char.IsDigit(Peek()) || (Peek() == '.' && !hasDecimalPoint)))
         {
+            if (Peek() == '.')
+            {
+                hasDecimalPoint = true;
+            }
+
             Advance();
         }
 
         string text = _input.Substring(start, _pos - start);
+        if (hasDecimalPoint)
+        {
+            return new MythToken(MythTokenType.FloatLiteral, text);
+        }
+
         return new MythToken(MythTokenType.IntLiteral, text);
     }
 

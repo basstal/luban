@@ -31,9 +31,6 @@
       <None Update="Templates\cs-editor-json\enum.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Templates\myth\MythTemplate.sbn">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <None Update="SafeReferenceMethodSignatures.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
@@ -43,13 +40,16 @@
       <None Update="Myth.Core\ParserRule.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Myth.Core\FunctionCallMapping.txt">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="Templates\myth\MythTemplate1.sbn">
+      <None Update="Myth.Core\FunctionDefineExample.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Templates\myth\IMythConditionContextTemplate.sbn">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Templates\myth\MythTemplate.sbn">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Templates\myth\MythTemplate1.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

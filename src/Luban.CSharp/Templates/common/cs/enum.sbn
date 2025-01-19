@@ -29,5 +29,15 @@
 {{__editable_content.content}}
 {{__editable_content.end}}
     }
-
+{{if __generate_alias_mapper}}
+    public static class {{__name}}Mapper
+    {
+        public static System.Collections.Generic.Dictionary<string, {{__name}}> Mapper = new System.Collections.Generic.Dictionary<string, {{__name}}>()
+        {
+        {{~for item in items~}} 
+            {"{{item.alias}}", {{__name}}.{{format_enum_item_name __code_style item.name}}},
+        {{~end~}}
+        };
+    }
+{{~end~}}
 {{namespace_with_grace_end __namespace_with_top_module}} 
