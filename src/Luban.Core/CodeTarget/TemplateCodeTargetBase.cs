@@ -112,7 +112,7 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
         var exportArrayGroups = exportFields.Where(defField => defField.Tags.ContainsKey("array")).GroupBy(defField => defField.Tags["array"]);
         foreach (var exportArray in exportArrayGroups)
         {
-            var groups = exportArray.GroupBy(defField => defField.CType);
+            var groups = exportArray.GroupBy(defField => defField.CType.ToString());
             foreach (var group in groups)
             {
                 var defFields = group.ToArray();
@@ -131,7 +131,7 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
                     NotNameValidation = false,
                     Groups = new List<string>()
                 };
-                result.Add(new ExportArray() { CType = group.Key, DefFields = defFields, ArrayField = new DefField(defFields[0].HostType, rawField, 0), });
+                result.Add(new ExportArray() { CType = group.ElementAt(0).CType, DefFields = defFields, ArrayField = new DefField(defFields[0].HostType, rawField, 0), });
             }
         }
 
