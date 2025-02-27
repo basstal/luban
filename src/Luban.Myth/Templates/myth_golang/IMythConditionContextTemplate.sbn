@@ -1,0 +1,9 @@
+package {{__golang_top_myth_package}}
+
+// 更新此处时请同时更新 myth.xml 中 MythEvaluateType 枚举类型
+type {{__interface_name}} interface {
+    GetInt(key string) int
+    GetBool(key string) bool
+    EvalFunction(funcName string, args ...interface{}) int
+    EvalFunctionReturnBool(funcName string, args ...interface{}) bool
+} 

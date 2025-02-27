@@ -1,0 +1,79 @@
+package {{__golang_myth_package}}
+
+import (
+    "{{__import_prefix}}{{__golang_top_myth_package}}"
+)
+
+////////////////////////////////////////
+// 方法定义
+// 此处假定 __method_values 内保存的是 Go 语言版的方法实现代码
+{{~ for value in __method_values ~}}
+{{ value.item1 }}
+{{~ end }}
+
+////////////////////////////////////////
+// 全局函数映射表，将函数名称映射到对应的函数
+var MethodMapper = map[string]func({{__golang_top_myth_package}}.{{__interface_name}}) bool{
+    {{~ for value in __method_values ~}}
+    "{{value.item2}}": {{value.item2}},
+    {{~ end ~}}
+}
+
+////////////////////////////////////////
+// Delegate 类型对应的 Evaluate 方法
+{{~ for delegateTypeMapping in __delegateTypesMapping ~}}
+/*
+    该方法为安全引用方法，防止 myth 重新生成时丢失方法引用。
+*/
+func Evaluate{{delegateTypeMapping.value.item1}}(functionName string, {{delegateTypeMapping.value.item4}}) bool {
+    {{~ if delegateTypeMapping.value.is_empty ~}}
+    // 空逻辑，可按需补充
+    {{~ else ~}}
+    if functionCall, ok := m_methodDict{{ delegateTypeMapping.value.item1 }}[functionName]; ok {
+        return functionCall({{ delegateTypeMapping.value.item5 }})
+    }
+    {{~ end ~}}
+    // 根据需要在调试模式下输出错误日志
+    return false
+}
+{{~ end ~}}
+
+////////////////////////////////////////
+// 常量值映射表
+{{~ for constValue in __constValues ~}}
+{{constValueList = constValue.value}}
+var m_constValue{{ constValueList[0].item2 }} = map[string]{{ constValueList[0].item1 }}{
+    {{~ for constValueEntry in constValueList ~}}
+    "{{ constValueEntry.item4 }}": {{ constValueEntry.item3 }},
+    {{~ end ~}}
+}
+{{~ end ~}}
+
+////////////////////////////////////////
+// 常量获取及存在性检查方法
+{{~ for constValueGetter in __constValueGetters ~}}
+/*
+    安全引用方法，防止 myth 重新生成时失效。
+*/
+func GetConstValue{{constValueGetter.value.item2}}(key string) {{constValueGetter.value.item1}} {
+    {{~ if constValueGetter.value.item3 ~}}
+    if value, ok := m_constValue{{constValueGetter.value.item2}}[key]; ok {
+        return value
+    }
+    {{~ end ~}}
+    // 可加入调试日志记录
+    return {{constValueGetter.value.item4}}
+}
+
+/*
+    检查常量值是否存在。
+*/
+func IsConstValue{{constValueGetter.value.item2}}Exist(key string) bool {
+    {{~ if constValueGetter.value.item3 ~}}
+    _, exists := m_constValue{{constValueGetter.value.item2}}[key]
+    return exists
+    {{~ else ~}}
+    return false
+    {{~ end ~}}
+}
+{{~ end ~}} 

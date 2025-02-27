@@ -1,11 +1,12 @@
 ﻿namespace Myth
 {
-    public class MythCodeGenerator
+    public class MythGolangCodeGenerator : IMythCodeGenerator
     {
-        public static string GetEvalContextByFunctionSignature(FunctionSignature functionSignature, string[] argCodes)
+        public const string GolangTopModuleName = "myth";
+        public string GetEvalContextByFunctionSignature(FunctionSignature functionSignature, string[] argCodes)
         {
             var returnType = functionSignature.ReturnType;
-            var evalFunction = GetEvalFunctionByFunctionSignature(functionSignature);
+            var evalFunction = MythConverter.GetEvalFunctionByFunctionSignature(functionSignature);
             var parameters = string.Join(",", argCodes);
             switch (returnType)
             {
@@ -29,37 +30,13 @@
             throw new NotImplementedException("GetEvalContextByFunctionSignature failed!");
         }
 
-        public static string GetEvalFunctionByFunctionSignature(FunctionSignature functionSignature)
-        {
-            var returnType = functionSignature.ReturnType;
-            var haveParams = functionSignature.ParamTypes.Count > 0;
-            switch (returnType)
-            {
-                case MythValueType.Int:
-                case MythValueType.IntTenThousandth:
-                    if (!haveParams)
-                    {
-                        return "GetInt";
-                    }
-
-                    return "EvalFunction";
-                case MythValueType.Bool:
-                    if (!haveParams)
-                    {
-                        return "GetBool";
-                    }
-
-                    return "EvalFunctionReturnBool";
-            }
-
-            throw new NotImplementedException("GetEvalFunctionByFunctionSignature failed!");
-        }
+        
 
         /// <summary>
-        /// 根据AST，生成可执行的C#表达式代码
+        /// 根据AST，生成可执行golang表达式代码
         /// 假设我们用 ctx 作为 IConditionContext 的变量名
         /// </summary>
-        public static string GenerateExpressionCode(MythExprNode node, MythExprNode parent)
+        public string GenerateExpressionCode(MythExprNode node, MythExprNode parent)
         {
             if (node is LiteralNode ln)
             {
@@ -109,7 +86,7 @@
             {
                 var left = GenerateExpressionCode(cn.Left, cn);
                 var right = GenerateExpressionCode(cn.Right, cn);
-                string op = CompareOpToString(cn.Operator);
+                string op = MythConverter.CompareOpToString(cn.Operator);
                 return $"({left} {op} {right})";
             }
             else if (node is LogicalNode ln2)
@@ -123,22 +100,9 @@
             return "/*UNKNOWN*/";
         }
 
-        
 
-        private static string CompareOpToString(MythCompareOp op)
-        {
-            switch (op)
-            {
-                case MythCompareOp.Equal: return "==";
-                case MythCompareOp.NotEqual: return "!=";
-                case MythCompareOp.Greater: return ">";
-                case MythCompareOp.GreaterEqual: return ">=";
-                case MythCompareOp.Less: return "<";
-                case MythCompareOp.LessEqual: return "<=";
-            }
 
-            return "/*UNKNOWN*/";
-        }
+
 
         /// <summary>
         /// 把最终的表达式包装成一个可执行的方法字符串，比如:
@@ -148,12 +112,11 @@
         /// }
         /// 
         /// </summary>
-        public static string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node)
+        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node)
         {
             var exprCode = GenerateExpressionCode(node, null);
             return $@"
-public static bool {methodName}({interfaceName} ctx)
-{{
+func {methodName}(ctx {GolangTopModuleName}.{interfaceName}) bool {{
     return {exprCode};
 }}";
         }

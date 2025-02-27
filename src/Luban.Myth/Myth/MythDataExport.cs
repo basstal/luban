@@ -1,7 +1,9 @@
 using Luban;
+using Luban.CodeTarget;
 using Luban.Datas;
 using Luban.DataTarget;
 using Luban.Defs;
+using Luban.Myth;
 using Luban.OutputSaver;
 using Luban.Types;
 using Luban.Utils;
@@ -124,7 +126,24 @@ public class MythDataExport : DataExporterBase
         var outputManifest = new OutputFileManifest("myth", OutputType.Code);
         // var safeReferenceMethodSignatures = ReadSafeReferenceMethodsFromFile();
         string interfaceName = "IMythConditionContext";
-        var mythDataExport = new MythCodeTarget();
+        IMythCodeTarget mythCodeGenerator;
+        switch (MythManager.Ins.MythConfig.CodeTarget)
+        {
+            case "csharp":
+            {
+                mythCodeGenerator = new MythCodeTargetCSharp();
+                break;
+            }
+            case "golang":
+            {
+                mythCodeGenerator = new MythCodeTargetGolang();
+                break;
+            }
+            default:
+            {
+                throw new NotImplementedException($"暂不支持的代码目标 {MythManager.Ins.MythConfig.CodeTarget}");
+            }
+        }
         // 每一张需要生成 Myth 代码的表
         foreach (var (mythTable, mythFieldIndices) in exportMythTables)
         {
@@ -179,7 +198,20 @@ public class MythDataExport : DataExporterBase
 
                         // 3. 生成 C# 代码
                         string methodName = CreateMythMethodName(mythTable, record, defField);
-                        string code = MythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast);
+                        string code;
+                        switch (MythManager.Ins.MythConfig.CodeTarget)
+                        {
+                            case "csharp":
+                                var mythCSharpCodeGenerator = new MythCSharpCodeGenerator();
+                                code = mythCSharpCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast);
+                                break;
+                            case "golang":
+                                var mythGoCodeGenerator = new MythGolangCodeGenerator();
+                                code = mythGoCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast);
+                                break;
+                            default:
+                                throw new NotImplementedException($"暂不支持的代码目标 {MythManager.Ins.MythConfig.CodeTarget}");
+                        }
                         // var metadataList = MythMetadataCollector.Collect(ast, dStringMythContent.Value, methodName, methodName);
                         if (result.ContainsKey(methodName))
                         {
@@ -230,12 +262,12 @@ public class MythDataExport : DataExporterBase
 
             // getterInfos = getterInfos.ToList();
             // var result = roslynExpressionProcessor.ProcessExpressions(expressions, safeReferenceMethodSignatures);
-            var outputFile = mythDataExport.GenerateMyth(ctx, result, mythTable.ValueTType.DefBean, interfaceName);
+            var outputFile = mythCodeGenerator.GenerateMyth(ctx, result, mythTable.ValueTType.DefBean, interfaceName);
             // Console.WriteLine($"outputFile :{outputFile.Content}");
             outputManifest.AddFile(outputFile);
         }
 
-        var interfaceFile = mythDataExport.GenerateMythInterface(ctx, interfaceName);
+        var interfaceFile = mythCodeGenerator.GenerateMythInterface(ctx, interfaceName);
         outputManifest.AddFile(interfaceFile);
 
         string outputSaverName = EnvManager.Current.GetOptionOrDefault(outputManifest.TargetName, BuiltinOptionNames.OutputSaver, true, "myth");

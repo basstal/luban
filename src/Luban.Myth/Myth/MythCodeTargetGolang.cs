@@ -2,17 +2,23 @@ using Luban;
 using Luban.CodeTarget;
 using Luban.CSharp.CodeTarget;
 using Luban.Defs;
+using Luban.Golang.CodeTarget;
+using Luban.Myth;
 using Luban.Utils;
+using Myth;
+using Neo.IronLua;
 using Scriban.Runtime;
 
-[CodeTarget("myth")]
-public class MythCodeTarget : CsharpCodeTargetBase
+[CodeTarget("myth_golang")]
+public class MythCodeTargetGolang : GoCodeTargetBase, IMythCodeTarget
 {
     public OutputFile GenerateMyth(GenerationContext ctx, Dictionary<string, (string, string)> result, DefBean bean, string interfaceName)
     {
         var writer = new CodeWriter();
-        var template = GetTemplate("MythTemplate1");
+        var template = GetTemplate("MythTemplate");
         var tplCtx = CreateTemplateContext(template);
+        var typeNameToFileSaverPath = GetFileNameWithoutExtByTypeName(bean.FullName);
+        var folderName = typeNameToFileSaverPath.Split(".").First().lower();
         var extraEnvs = new ScriptObject
         {
             { "__ctx", ctx },
@@ -31,7 +37,10 @@ public class MythCodeTarget : CsharpCodeTargetBase
             { "__code_style", CodeStyle },
             { "__methods", result.Keys },
             { "__method_values", result.Values },
-            { "__interface_name", interfaceName }
+            { "__interface_name", interfaceName },
+            { "__golang_myth_package", folderName },
+            { "__golang_top_myth_package", MythGolangCodeGenerator.GolangTopModuleName },
+            { "__import_prefix", MythManager.Ins.MythConfig.ImportPrefix },
             // { "__methods", result.methods },
             // { "__constDefinitions", result.constDefinitions },
             // { "__valueCallMappings", result.valueCallMappings },
@@ -42,7 +51,7 @@ public class MythCodeTarget : CsharpCodeTargetBase
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));
-        return new OutputFile() { File = $"{GetFileNameWithoutExtByTypeName(bean.FullName)}.Myth.{FileSuffixName}", Content = writer.ToResult(FileHeader) };
+        return new OutputFile() { File = $"{folderName}/{typeNameToFileSaverPath}.Myth.{MythManager.Ins.MythConfig.GetOutputSuffixByCodeTarget()}", Content = writer.ToResult(FileHeader) };
     }
 
     public OutputFile GenerateMythInterface(GenerationContext ctx, string interfaceName)
@@ -52,7 +61,7 @@ public class MythCodeTarget : CsharpCodeTargetBase
         var tplCtx = CreateTemplateContext(template);
         var extraEnvs = new ScriptObject
         {
-            { "__ctx", ctx }, { "__interface_name", interfaceName }
+            { "__ctx", ctx }, { "__interface_name", interfaceName }, { "__golang_top_myth_package", MythGolangCodeGenerator.GolangTopModuleName },
             // { "__top_module", ctx.Target.TopModule },
             // { "__manager_name", ctx.Target.Manager },
             // { "__manager_name_with_top_module", TypeUtil.MakeFullName(ctx.TopModule, ctx.Target.Manager) },
@@ -76,6 +85,6 @@ public class MythCodeTarget : CsharpCodeTargetBase
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));
-        return new OutputFile() { File = $"{interfaceName}.Myth.{FileSuffixName}", Content = writer.ToResult(FileHeader) };
+        return new OutputFile() { File = $"{interfaceName}.Myth.{MythManager.Ins.MythConfig.GetOutputSuffixByCodeTarget()}", Content = writer.ToResult(FileHeader) };
     }
 }

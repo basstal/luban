@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>dotnet-Luban.CSharp.Myth-FBAFA942-8A85-48B0-AA48-3053F30DAB52</UserSecretsId>
         <OutputType>Library</OutputType>
+        <RootNamespace>Luban.CSharp.Myth</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -43,13 +44,22 @@
       <None Update="Myth.Core\FunctionDefineExample.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Templates\myth\IMythConditionContextTemplate.sbn">
+      <None Update="Templates\golang\IMythConditionContextTemplate.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Templates\myth\MythTemplate.sbn">
+      <None Update="Templates\golang\MythTemplate.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Templates\myth\MythTemplate1.sbn">
+      <None Update="Templates\myth_csharp\IMythConditionContextTemplate.sbn">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Templates\myth_csharp\MythTemplate.sbn">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Templates\myth_golang\IMythConditionContextTemplate.sbn">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Templates\myth_golang\MythTemplate.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
@@ -58,6 +68,7 @@
       <ProjectReference Include="..\Luban.Core\Luban.Core.csproj" />
       <ProjectReference Include="..\Luban.CSharp\Luban.CSharp.csproj" />
       <ProjectReference Include="..\Luban.DataTarget.Builtin\Luban.DataTarget.Builtin.csproj" />
+      <ProjectReference Include="..\Luban.Golang\Luban.Golang.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -13,7 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Luban.CSharp.Myth\Luban.CSharp.Myth.csproj" />
+      <ProjectReference Include="..\Luban.Myth\Luban.Myth.csproj" />
     </ItemGroup>
 
 </Project>

@@ -44,7 +44,7 @@
     <ItemGroup>
       <ProjectReference Include="..\Luban.Bson\Luban.Bson.csproj" />
       <ProjectReference Include="..\Luban.Cpp\Luban.Cpp.csproj" />
-      <ProjectReference Include="..\Luban.CSharp.Myth\Luban.CSharp.Myth.csproj" />
+      <ProjectReference Include="..\Luban.Myth\Luban.Myth.csproj" />
       <ProjectReference Include="..\Luban.CSharp\Luban.CSharp.csproj" />
       <ProjectReference Include="..\Luban.Core\Luban.Core.csproj" />
       <ProjectReference Include="..\Luban.DataTarget.Builtin\Luban.DataTarget.Builtin.csproj" />

@@ -98,7 +98,7 @@
                     meta.IsParams = fn.FunctionSignature.IsParams;
                     meta.FunctionReturnType = fn.ReturnType;
                     meta.FunctionParameterTypes = fn.FunctionSignature.ParamTypes;
-                    meta.EvaluateType = MythCodeGenerator.GetEvalFunctionByFunctionSignature(fn.FunctionSignature);
+                    meta.EvaluateType = MythConverter.GetEvalFunctionByFunctionSignature(fn.FunctionSignature);
                     foreach (var arg in fn.Arguments)
                     {
                         CollectMetadata(arg, meta);

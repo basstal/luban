@@ -28,12 +28,19 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
 
     public void EnhanceScheme(GenerationContext ctx)
     {
-        var mythFunctionDefineFilePath = EnvManager.Current.GetOptionRaw("MythFunctionDefineFilePath");
-        MythGenerationEnabled = File.Exists(mythFunctionDefineFilePath);
-        if (!MythGenerationEnabled)
+        var mythFunctionDefineFilePath = MythManager.Ins.MythConfig.MythFunctionDefineFilePath;
+        MythGenerationEnabled = true;
+        if (!File.Exists(mythFunctionDefineFilePath))
         {
+            Console.WriteLine($"[ERROR] Myth function define file doesn't exist at {mythFunctionDefineFilePath}!");
+            MythGenerationEnabled = false;
             return;
         }
+        // MythGenerationEnabled = File.Exists(mythFunctionDefineFilePath);
+        // if (!MythGenerationEnabled)
+        // {
+        //     return;
+        // }
 
         MythFunctionTable.LoadFromFile(mythFunctionDefineFilePath);
 

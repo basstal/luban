@@ -1,5 +1,16 @@
 using Luban.CustomBehaviour;
 using Luban.Schema;
+using System.Text;
+using System.Text.Json;
+using Luban;
+using Luban.Datas;
+using Luban.DataTarget;
+using Luban.Defs;
+using Luban.OutputSaver;
+using Luban.Types;
+using Luban.Utils;
+using JsonCommentHandling = System.Text.Json.JsonCommentHandling;
+using JsonSerializerOptions = System.Text.Json.JsonSerializerOptions;
 
 namespace Luban.Myth;
 
@@ -9,6 +20,8 @@ public class MythManager
     private static readonly NLog.Logger s_logger = NLog.LogManager.GetCurrentClassLogger();
 
     public static MythManager Ins { get; } = new();
+
+    public MythConfig MythConfig { get; set; }
 
     // private class LoaderInfo
     // {
@@ -26,6 +39,22 @@ public class MythManager
     public void Init()
     {
         m_mythGenerationContextEnhance = CreateMythGenerationContextEnhance();
+        var mythConfigFile = EnvManager.Current.GetOption($"", "mythConfig", true);
+        if (!File.Exists(mythConfigFile))
+        {
+            throw new FileNotFoundException("myth config file was not found", mythConfigFile);
+        }
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true, AllowTrailingCommas = true, ReadCommentHandling = JsonCommentHandling.Skip, };
+        string jsonText = File.ReadAllText(mythConfigFile, Encoding.UTF8);
+        // Console.WriteLine($"读取到的 json: {jsonText}");
+        MythConfig = JsonSerializer.Deserialize<MythConfig>(jsonText, options);
+        if (MythConfig == null)
+        {
+            throw new InvalidOperationException("myth config file is invalid");
+        }
+        MythConfig.PostProcessRelativePath(mythConfigFile);
+        Console.WriteLine($"mythConfig : {MythConfig}");
     }
 
     // public void ScanRegisterAll(Assembly assembly)

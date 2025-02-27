@@ -10,13 +10,6 @@ using System.Collections.Generic;
 
 public {{class_modifier __bean}} partial class {{__name}} // : {{if parent_def_type}}{{__bean.parent}}{{else}}Luban.BeanBase{{end}}
 {
-/*
-#region ConstDefinitions
-{{~ for constDefinition in __constDefinitions ~}}
-    {{constDefinition}}
-{{~ end ~}}
-#endregion
-*/
 
 #region Methods
 {{~ for value in __method_values ~}}
@@ -55,7 +48,7 @@ public static bool Evaluate(string functionName, {{delegateTypeMapping.value.ite
 #endregion
 
 {{~ for constValue in __constValues ~}}
-    {{constValueList = constValue.value}}
+{{constValueList = constValue.value}}
 private static readonly Dictionary<string, {{constValueList[0].item1}}> m_constValue{{constValueList[0].item2}} = new Dictionary<string, {{constValueList[0].item1}}>
 {
     {{~ for constValueEntry in constValueList ~}}
@@ -94,115 +87,6 @@ public static bool IsConstValue{{constValueGetter.value.item2}}Exist(string key)
 {{~ end ~}}
 }
 {{~end~}}
-
-
-/*
-// TODO: conditional getter，但是不能根据字段来了，只能根据返回数据类型来
-{{~ for getterInfo in __getterInfos ~}}
-{{~ getter_limits = getterInfo.getter_key_types.size - 1 ~}}
-public static int Get{{~ getterInfo.field_name ~}}ConstValue({{~ for i in 0..getter_limits ~}}
-{{~ getterInfo.getter_key_types[i] }} {{ getterInfo.getter_key_names[i] }}{{~ if i < getter_limits ~}}, {{~ end ~}}
-{{~ end ~}})
-{
-    if (m_constValue{{getterInfo.field_name}}.TryGetValue($"{{~ getterInfo.field_name ~}}{{~ for i in 0..getter_limits ~}}{{"{"}}{{ getterInfo.getter_key_names[i] }}{{"}"}}{{~ end ~}}", out var value))
-    {
-        return value;
-    }
-    throw new ArgumentException($"{{ getterInfo.field_name }} constant with key 【 {{~ for i in 0..getter_limits ~}}{{"{"}}{{ getterInfo.getter_key_names[i] }}{{"}"}}{{~ end ~}} 】 not found.");
-}
-{{~ end ~}}
-*/
-
-/*
-public static Dictionary<string, Func<List<int>, int>> valueCalls = new Dictionary<string, Func<List<int>, int>>
-{
-    {{ __valueCallMappings }}
-};
-
-#region LibraryFunctions
-public static int Max(List<int> values)
-{
-    int maxValue = int.MinValue;
-    for (int i = 0; i < values.Count; i++)
-    {
-        if (values[i] > maxValue)
-        {
-            maxValue = values[i];
-        }
-    }
-
-    return maxValue;
-}
-
-public static int Min(List<int> values)
-{
-    int minValue = int.MaxValue;
-    for (int i = 0; i < values.Count; i++)
-    {
-        if (values[i] < minValue)
-        {
-            minValue = values[i];
-        }
-    }
-
-    return minValue;
-}
-
-public static int Average(List<int> values)
-{
-    if (values.Count == 0)
-    {
-        return 0;
-    }
-
-    int sum = 0;
-    for (int i = 0; i < values.Count; i++)
-    {
-        sum += values[i];
-    }
-
-    return sum / values.Count;
-}
-
-public static bool Any(List<int> values, int target)
-{
-    if (values.Count == 0)
-    {
-        return false;
-    }
-
-    for (int i = 0; i < values.Count; i++)
-    {
-        if (values[i] == target)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-public static bool AllGreatEqual(List<int> values, int target)
-{
-    if (values.Count == 0)
-    {
-        return true;  // 空列表返回 true，因为没有元素违反条件
-    }
-
-    foreach (var value in values)
-    {
-        if (value < target)
-        {
-            return false; // 如果有任何一个值小于 target，则返回 false
-        }
-    }
-
-    return true; // 如果所有值都大于等于 target，则返回 true
-}
-#endregion
-
-*/
-
 }
 
 {{namespace_with_grace_end __namespace_with_top_module}}

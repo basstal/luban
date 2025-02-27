@@ -45,7 +45,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Luban.PHP", "Luban.PHP\Luba
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luban.Rust", "Luban.Rust\Luban.Rust.csproj", "{15DC99B5-9ACF-4CB0-BCE4-3BD636A77445}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luban.CSharp.Myth", "Luban.CSharp.Myth\Luban.CSharp.Myth.csproj", "{5F8C13F8-15EE-44D6-9B7B-DA260DED504B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luban.Myth", "Luban.Myth\Luban.Myth.csproj", "{5F8C13F8-15EE-44D6-9B7B-DA260DED504B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{6FC010FD-C646-4CE8-8757-324D571D6CDC}"
 EndProject

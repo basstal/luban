@@ -275,3 +275,5 @@ __pycache__/
 /src/Luban/Properties/*.json
 *.7z
 /Externals
+/myproject
+myproject.zip
