@@ -47,8 +47,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luban.Rust", "Luban.Rust\Lu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luban.Myth", "Luban.Myth\Luban.Myth.csproj", "{5F8C13F8-15EE-44D6-9B7B-DA260DED504B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{6FC010FD-C646-4CE8-8757-324D571D6CDC}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -143,10 +141,6 @@ Global
 		{5F8C13F8-15EE-44D6-9B7B-DA260DED504B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F8C13F8-15EE-44D6-9B7B-DA260DED504B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F8C13F8-15EE-44D6-9B7B-DA260DED504B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6FC010FD-C646-4CE8-8757-324D571D6CDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6FC010FD-C646-4CE8-8757-324D571D6CDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6FC010FD-C646-4CE8-8757-324D571D6CDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6FC010FD-C646-4CE8-8757-324D571D6CDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

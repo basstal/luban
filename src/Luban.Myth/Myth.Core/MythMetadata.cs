@@ -34,7 +34,10 @@
 
         private static void Traverse(MythExprNode node, List<MythMetadata> metaList)
         {
-            if (node == null) return;
+            if (node == null)
+            {
+                return;
+            }
 
             if (node is LogicalNode ln2)
             {
@@ -55,7 +58,10 @@
 
         private static void CollectMetadata(MythExprNode node, MythMetadata meta)
         {
-            if (node == null) return;
+            if (node == null)
+            {
+                return;
+            }
 
             switch (node)
             {

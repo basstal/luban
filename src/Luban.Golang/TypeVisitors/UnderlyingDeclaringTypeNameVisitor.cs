@@ -1,3 +1,4 @@
+using Luban.Defs;
 using Luban.Golang.TemplateExtensions;
 using Luban.Types;
 using Luban.TypeVisitors;
@@ -46,7 +47,13 @@ public class UnderlyingDeclaringTypeNameVisitor : ITypeFuncVisitor<string>
 
     public string Accept(TEnum type)
     {
-        return "int32";
+        // return "int32";
+        return DefEnumToName(type.DefEnum);
+    }
+
+    public static string DefEnumToName(DefEnum defEnum)
+    {
+        return defEnum.TypeNameWithTypeMapper() ?? defEnum.FullName.Replace(".", "");
     }
 
     public string Accept(TString type)

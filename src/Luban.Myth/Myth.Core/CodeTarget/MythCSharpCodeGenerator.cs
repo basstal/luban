@@ -1,7 +1,10 @@
-﻿namespace Myth
+﻿using Luban.Defs;
+
+namespace Myth
 {
     public class MythCSharpCodeGenerator : IMythCodeGenerator
     {
+        private List<DefEnum> m_exportEnums;
         public string GetEvalContextByFunctionSignature(FunctionSignature functionSignature, string[] argCodes)
         {
             var returnType = functionSignature.ReturnType;
@@ -29,13 +32,11 @@
             throw new NotImplementedException("GetEvalContextByFunctionSignature failed!");
         }
 
-        
-
         /// <summary>
         /// 根据AST，生成可执行C#表达式代码
         /// 假设我们用 ctx 作为 IConditionContext 的变量名
         /// </summary>
-        public string GenerateExpressionCode(MythExprNode node, MythExprNode parent)
+        public string GenerateExpressionCode(MythExprNode node, MythExprNode parent, int nodeIndexFromParent = -1)
         {
             if (node is LiteralNode ln)
             {
@@ -59,7 +60,30 @@
                         return ln.RawValue.ToLower(); // "true"/"false" 
                     case MythValueType.String:
                     case MythValueType.Enum:
+                    {
+                        var functionCallNode = (FunctionCallNode)parent;
+                        var functionSignature = functionCallNode.FunctionSignature;
+                        if (functionSignature.ParamActualTypeDict.TryGetValue(nodeIndexFromParent, out var actualTypeStr))
+                        {
+                            // 从 luban 的 enum 定义中反射获取 actualTypeStr 对应的 DefEnum，并使用 DefEnum 反射中文的 RawValue 到对应的 Enum 内容。
+                            var enumDef = m_exportEnums.Find(defEnum => defEnum.FullName == actualTypeStr);
+                            if (enumDef == null)
+                            {
+                                throw new NotImplementedException($"Enum {actualTypeStr} not found in export enums");
+                            }
+
+                            var enumItem = enumDef.Items.Find(item => item.Name == ln.RawValue || item.Alias == ln.RawValue);
+                            if (enumItem == null)
+                            {
+                                throw new NotImplementedException($"Enum item {ln.RawValue} not found in enum {actualTypeStr}");
+                            }
+
+
+                            return $"{enumDef.FullNameWithTopModule}.{enumItem.Name}";
+                        }
+
                         return $"\"{ln.RawValue}\"";
+                    }
                     default:
                         throw new NotImplementedException($"Unknown ValueType or {ln.ValueType} is not supported yet");
                 }
@@ -75,7 +99,7 @@
                 // 演示直接调 ctx.EvalFunction(...)
                 // 需要把参数也生成C#表达式
                 var argCodes = fn.Arguments
-                    .Select(argument => GenerateExpressionCode(argument, fn))
+                    .Select((argument, index) => GenerateExpressionCode(argument, fn, index))
                     .ToArray();
                 // 简化：把所有参数先转成 string[] 传进去
                 // 真实项目可能要区分 int/bool/string
@@ -111,8 +135,9 @@
         /// }
         /// 
         /// </summary>
-        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node)
+        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node, List<DefEnum> exportEnums)
         {
+            m_exportEnums = exportEnums;
             var exprCode = GenerateExpressionCode(node, null);
             return $@"
 public static bool {methodName}({interfaceName} ctx)

@@ -112,7 +112,16 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
         var exportArrayGroups = exportFields.Where(defField => defField.Tags.ContainsKey("array")).GroupBy(defField => defField.Tags["array"]);
         foreach (var exportArray in exportArrayGroups)
         {
-            var groups = exportArray.GroupBy(defField => defField.CType.ToString());
+            var groups = exportArray.GroupBy(defField =>
+            {
+                if (defField.CType is TBean tbean)
+                {
+                    // Console.WriteLine($"defField.CType.ToString()： {tbean.DefBean.FullName}");
+                    return tbean.DefBean.FullName;
+                }
+
+                return defField.CType.ToString();
+            });
             foreach (var group in groups)
             {
                 var defFields = group.ToArray();
@@ -131,6 +140,7 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
                     NotNameValidation = false,
                     Groups = new List<string>()
                 };
+                // Console.WriteLine($"group.ElementAt(0).CType : {group.ElementAt(0).CType}");
                 result.Add(new ExportArray() { CType = group.ElementAt(0).CType, DefFields = defFields, ArrayField = new DefField(defFields[0].HostType, rawField, 0), });
             }
         }
@@ -179,6 +189,24 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
 
     public override void GenerateEnum(GenerationContext ctx, DefEnum @enum, CodeWriter writer)
     {
+        // // 检查 enum 定义中 non-empty alias 是否存在重复
+        // // 这里假设 @enum.Items 是枚举项集合，每个项都有 Alias 属性
+        // var aliasList = @enum.Items
+        //     .Where(item => !string.IsNullOrWhiteSpace(item.Alias))
+        //     .Select(item => item.Alias)
+        //     .ToList();
+
+        // var duplicateAliases = aliasList
+        //     .GroupBy(alias => alias)
+        //     .Where(g => g.Count() > 1)
+        //     .Select(g => g.Key)
+        //     .ToList();
+
+        // if (duplicateAliases.Any())
+        // {
+        //     throw new Exception($"Enum '{@enum.Name}' has duplicate alias(es): {string.Join(", ", duplicateAliases)}");
+        // }
+
         var template = GetTemplate("enum");
         var tplCtx = CreateTemplateContext(template);
         var editableContent = GetEditableContent(@enum);

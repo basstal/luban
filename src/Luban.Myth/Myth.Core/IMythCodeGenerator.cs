@@ -1,10 +1,12 @@
+using Luban.Defs;
+
 namespace Myth
 {
     public interface IMythCodeGenerator
     {
         public string GetEvalContextByFunctionSignature(FunctionSignature functionSignature, string[] argCodes);
-        public string GenerateExpressionCode(MythExprNode node, MythExprNode parent);
+        public string GenerateExpressionCode(MythExprNode node, MythExprNode parent, int nodeIndexFromParent = -1);
 
-        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node);
+        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node, List<DefEnum> exportEnums);
     }
 }

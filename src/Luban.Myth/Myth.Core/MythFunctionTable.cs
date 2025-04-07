@@ -23,7 +23,9 @@
                 var trimmed = line.Trim();
                 // 跳过空行或注释行(若需要)
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
+                {
                     continue;
+                }
 
                 // 去掉行末分号
                 trimmed = trimmed.TrimEnd(';').Trim();
@@ -39,7 +41,9 @@
                     // 1) Parse return type
                     int firstSpaceIndex = trimmed.IndexOf(' ');
                     if (firstSpaceIndex < 0)
+                    {
                         throw new Exception("缺少返回类型，或者返回类型与函数名中缺少空格");
+                    }
 
                     string returnTypeStr = trimmed.Substring(0, firstSpaceIndex).Trim();
                     MythValueType returnType = ParseType(returnTypeStr);
@@ -61,7 +65,9 @@
                         funcName = rest.Substring(0, lParenIndex).Trim();
                         int rParenIndex = rest.IndexOf(')', lParenIndex + 1);
                         if (rParenIndex < 0)
+                        {
                             throw new Exception("缺少 ')'");
+                        }
 
                         // Inside parentheses
                         insideParen = rest.Substring(lParenIndex + 1, rParenIndex - (lParenIndex + 1)).Trim();
@@ -89,21 +95,43 @@
                         if (paramChunks.Count == 1)
                         {
                             var chunk = paramChunks[0];
-                            if (chunk.StartsWith("多个"))
+                            // 新增逻辑: 若包含 '@' 则切割成定义类型与实际类型
+                            string definitionTypeStr = chunk;
+                            string actualTypeStr = null;
+                            if (chunk.Contains("@"))
                             {
-                                // 形如 "多个字符串"
+                                var parts = chunk.Split(new char[] { '@' }, 2);
+                                definitionTypeStr = parts[0].Trim();
+                                actualTypeStr = parts[1].Trim();
+                            }
+
+                            if (definitionTypeStr.StartsWith("多个"))
+                            {
+                                // 形如 "多个字符串" 或 "多个字符串@string"
                                 signature.IsParams = true;
-                                // 取出 "string"
-                                var afterParams = chunk.Substring("多个".Length).Trim();
+                                // 取出定义类型中 "多个" 后面的字符串
+                                var afterParams = definitionTypeStr.Substring("多个".Length).Trim();
                                 MythValueType t = ParseType(afterParams);
                                 signature.ParamTypes.Add(t);
+
+                                // 保存实际类型
+                                if (actualTypeStr != null)
+                                {
+                                    signature.ParamActualTypeDict[signature.ParamTypes.Count - 1] = actualTypeStr;
+                                }
                             }
                             else
                             {
                                 // 普通单参数
                                 signature.IsParams = false;
-                                MythValueType t = ParseType(chunk);
+                                MythValueType t = ParseType(definitionTypeStr);
                                 signature.ParamTypes.Add(t);
+
+                                // 保存实际类型
+                                if (actualTypeStr != null)
+                                {
+                                    signature.ParamActualTypeDict[signature.ParamTypes.Count - 1] = actualTypeStr;
+                                }
                             }
                         }
                         else
@@ -113,15 +141,31 @@
 
                             foreach (var chunk in paramChunks)
                             {
-                                if (chunk.StartsWith("多个"))
+                                // 新增逻辑: 如果包含 '@' 则切割成定义类型与实际类型
+                                string definitionTypeStr = chunk;
+                                string actualTypeStr = null;
+                                if (chunk.Contains("@"))
                                 {
-                                    // 不允许
+                                    var parts = chunk.Split(new char[] { '@' }, 2);
+                                    definitionTypeStr = parts[0].Trim();
+                                    actualTypeStr = parts[1].Trim();
+                                }
+
+                                if (definitionTypeStr.StartsWith("多个"))
+                                {
+                                    // 多参数模式下，不允许使用 "多个" 关键字
                                     throw new Exception($"多参数模式下不允许使用 \"多个\" 关键字: {chunk}");
                                 }
 
                                 // 普通类型
-                                MythValueType t = ParseType(chunk);
+                                MythValueType t = ParseType(definitionTypeStr);
                                 signature.ParamTypes.Add(t);
+
+                                // 保存实际类型
+                                if (actualTypeStr != null)
+                                {
+                                    signature.ParamActualTypeDict[signature.ParamTypes.Count - 1] = actualTypeStr;
+                                }
                             }
                         }
                     }
@@ -143,12 +187,18 @@
         {
             switch (typeStr)
             {
-                case "整数": return MythValueType.Int;
-                case "万分比整数": return MythValueType.IntTenThousandth;
-                case "布尔": return MythValueType.Bool;
-                case "字符串": return MythValueType.String;
-                case "枚举": return MythValueType.Enum;
-                default: return MythValueType.Unknown;
+                case "整数":
+                    return MythValueType.Int;
+                case "万分比整数":
+                    return MythValueType.IntTenThousandth;
+                case "布尔":
+                    return MythValueType.Bool;
+                case "字符串":
+                    return MythValueType.String;
+                case "枚举":
+                    return MythValueType.Enum;
+                default:
+                    return MythValueType.Unknown;
             }
         }
     }

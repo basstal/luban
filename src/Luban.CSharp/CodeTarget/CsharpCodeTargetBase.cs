@@ -237,6 +237,18 @@ public abstract class CsharpCodeTargetBase : TemplateCodeTargetBase
         return editableContent;
     }
 
+    public override void GenerateBean(GenerationContext ctx, DefBean bean, CodeWriter writer)
+    {
+        foreach (var exportField in bean.ExportFields)
+        {
+            if (exportField.CType.IsEnum)
+            {
+                Console.WriteLine(CsharpTemplateExtension.DeclaringTypeName(exportField.CType));
+            }
+        }
+        base.GenerateBean(ctx, bean, writer);
+    }
+
     public override bool GenerateXlsxOpener(GenerationContext ctx, CodeWriter writer)
     {
         var template = GetTemplate("xlsxOpener");

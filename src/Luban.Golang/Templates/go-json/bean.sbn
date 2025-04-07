@@ -16,6 +16,9 @@ type {{go_full_name}} struct {
     {{~for field in hierarchy_fields ~}}
     {{format_field_name __code_style field.name}} {{declaring_type_name field.ctype}}
     {{~end~}}
+    {{~ for group in export_array_groups ~}}
+    {{format_field_name __code_style group.array_field.name}} []{{declaring_type_name group.ctype}}
+    {{~ end ~}}
 }
 
 const TypeId_{{go_full_name}} = {{__this.id}}
@@ -44,6 +47,13 @@ func New{{go_full_name}}(_buf map[string]interface{}) (_v *{{go_full_name}}, err
     _v = &{{go_full_name}}{}
     {{~for field in hierarchy_fields ~}}
     {{deserialize_field field.ctype ("_v." + (format_field_name __code_style field.name)) field.name '_buf'}}
+    {{~end~}}
+    {{~for group in export_array_groups ~}}
+    _v.{{format_field_name __code_style group.array_field.name}} = []{{declaring_type_name group.ctype}} {
+        {{~for field in group.def_fields ~}}
+        _v.{{format_field_name __code_style field.name}},
+        {{~end~}}
+    }
     {{~end~}}
     return
 }

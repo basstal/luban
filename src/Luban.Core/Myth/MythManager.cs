@@ -35,11 +35,18 @@ public class MythManager
     // }
 
     // private readonly Dictionary<(string, string), LoaderInfo> _schemaLoaders = new();
-
+    public bool enabled;
     public void Init()
     {
+        var haveMythConfig = EnvManager.Current.HasOptionRaw("mythConfig");
+        if (!haveMythConfig)
+        {
+            return;
+        }
+
+        enabled = true;
         m_mythGenerationContextEnhance = CreateMythGenerationContextEnhance();
-        var mythConfigFile = EnvManager.Current.GetOption($"", "mythConfig", true);
+        var mythConfigFile = EnvManager.Current.GetOptionRaw("mythConfig");
         if (!File.Exists(mythConfigFile))
         {
             throw new FileNotFoundException("myth config file was not found", mythConfigFile);
@@ -129,11 +136,19 @@ public class MythManager
 
     public void EnhanceScheme(GenerationContext genCtx)
     {
+        if (!enabled)
+        {
+            return;
+        }
         m_mythGenerationContextEnhance.EnhanceScheme(genCtx);
     }
 
     public void EnhanceLoadDatasAndValidate(GenerationContext genCtx)
     {
+        if (!enabled)
+        {
+            return;
+        }
         m_mythGenerationContextEnhance.EnhanceLoadDatasAndValidate(genCtx);
     }
 }

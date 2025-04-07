@@ -16,7 +16,7 @@ public class GoCommonTemplateExtension : ScriptObject
     {
         return TypeUtil.MakeGoFullName(bean.Namespace, bean.Name).ToLowerInvariant();
     }
-
+    
     public static string DeclaringTypeName(TType type)
     {
         return type.Apply(DeclaringTypeNameVisitor.Ins);

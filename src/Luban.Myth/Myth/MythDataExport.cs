@@ -96,7 +96,7 @@ public class MythDataExport : DataExporterBase
         }
 
         // 记录需要导出 Myth 代码的表，以及它们需要导出的字段
-        Dictionary<DefTable, List<int>> exportMythTables = new Dictionary<DefTable, List<int>>();
+        Dictionary<DefTable, List<int[]>> exportMythTables = new Dictionary<DefTable, List<int[]>>();
         foreach (var defTable in ctx.ExportTables)
         {
             var defTableValueBeanType = defTable.ValueTType;
@@ -104,21 +104,23 @@ public class MythDataExport : DataExporterBase
             for (int index = 0; index < count; ++index)
             {
                 var defField = defTableValueBeanType.DefBean.ExportFields[index];
-                // TODO:现在暂不支持直接在表的 Bean 定义中使用定义基础字段类型为 MythContent
-                if (!(defField.CType is TBean beanType))
+                if (defField.CType is TBean beanType)
                 {
-                    continue;
-                }
-
-                if (mythBeans.ContainsKey(beanType.DefBean))
-                {
-                    if (!exportMythTables.TryGetValue(defTable, out var container))
+                    var (mythBeanPath, _) = FindMythBeanPath(beanType.DefBean, mythBeans.Keys.ToHashSet());
+                    if (mythBeanPath != null)
                     {
-                        container = new List<int>();
-                        exportMythTables.Add(defTable, container);
-                    }
+                        if (!exportMythTables.TryGetValue(defTable, out var container))
+                        {
+                            container = new List<int[]>();
+                            exportMythTables.Add(defTable, container);
+                        }
 
-                    container.Add(index);
+                        // 构建完整路径：当前字段索引 + 子路径
+                        var fullPath = new int[mythBeanPath.Length + 1];
+                        fullPath[0] = index;
+                        Array.Copy(mythBeanPath, 0, fullPath, 1, mythBeanPath.Length);
+                        container.Add(fullPath);
+                    }
                 }
             }
         }
@@ -144,6 +146,7 @@ public class MythDataExport : DataExporterBase
                 throw new NotImplementedException($"暂不支持的代码目标 {MythManager.Ins.MythConfig.CodeTarget}");
             }
         }
+
         // 每一张需要生成 Myth 代码的表
         foreach (var (mythTable, mythFieldIndices) in exportMythTables)
         {
@@ -154,32 +157,29 @@ public class MythDataExport : DataExporterBase
             foreach (var record in ctx.GetTableExportDataList(mythTable))
             {
                 // 每一个需要转为 expression 的列
-                foreach (var mythFieldIndex in mythFieldIndices)
+                foreach (var mythFieldPath in mythFieldIndices)
                 {
                     // 找到 Table 中列定义，列名称
-                    var defField = mythTable.ValueTType.DefBean.HierarchyExportFields[mythFieldIndex];
-                    // var indexInfos = mythTable.IndexList;
-                    // var getterInfo = new GetterInfo()
-                    // {
-                    //     getterKeyTypes = indexInfos.Select(indexInfo =>
-                    //     {
-                    //         // 如果 getter 的参数为 enum 类型，直接使用 enum 对应的枚举类型
-                    //         if (indexInfo.IndexField.CType is TEnum enumType)
-                    //         {
-                    //             return enumType.DefEnum.Name;
-                    //         }
-                    //
-                    //         return indexInfo.Type.TypeName;
-                    //     }).ToArray(),
-                    //     getterKeyNames = indexInfos.Select(indexInfo => indexInfo.IndexField.Name).ToArray(),
-                    //     tableExportDefField = tableMythField,
-                    //     fieldName = TypeUtil.ToCsStyleName(tableMythField.Name)
-                    // };
-                    // getterInfos.Add(getterInfo);
+                    var defField = mythTable.ValueTType.DefBean.HierarchyExportFields[mythFieldPath[0]];
                     // 找到列对应的数据类型
-                    var dBeanField = (DBean)record.Data.Fields[mythFieldIndex];
+                    var currentValue = record.Data.Fields[mythFieldPath[0]];
+                    if (currentValue is not DBean dBeanField)
+                    {
+                        throw new InvalidOperationException($"路径 {string.Join(",", mythFieldPath)} 的第一个字段不是 DBean 类型");
+                    }
 
-                    // Console.WriteLine($"dBeanField : {dBeanField}");
+                    // 根据路径获取最终的 MythContent 值
+                    for (int i = 1; i < mythFieldPath.Length; i++)
+                    {
+                        var nextValue = dBeanField.Fields[mythFieldPath[i]];
+                        if (nextValue is not DBean nextDBean)
+                        {
+                            throw new InvalidOperationException($"路径 {string.Join(",", mythFieldPath)} 的第 {i + 1} 个字段不是 DBean 类型");
+                        }
+
+                        dBeanField = nextDBean;
+                    }
+
                     var mythContentIndex = mythBeans[dBeanField.Type];
                     var dValueMythContent = dBeanField.Fields[mythContentIndex];
                     if (dValueMythContent is DString dStringMythContent)
@@ -203,15 +203,16 @@ public class MythDataExport : DataExporterBase
                         {
                             case "csharp":
                                 var mythCSharpCodeGenerator = new MythCSharpCodeGenerator();
-                                code = mythCSharpCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast);
+                                code = mythCSharpCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
                                 break;
                             case "golang":
                                 var mythGoCodeGenerator = new MythGolangCodeGenerator();
-                                code = mythGoCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast);
+                                code = mythGoCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
                                 break;
                             default:
                                 throw new NotImplementedException($"暂不支持的代码目标 {MythManager.Ins.MythConfig.CodeTarget}");
                         }
+
                         // var metadataList = MythMetadataCollector.Collect(ast, dStringMythContent.Value, methodName, methodName);
                         if (result.ContainsKey(methodName))
                         {
@@ -305,6 +306,38 @@ public class MythDataExport : DataExporterBase
         var functionName = TypeUtil.ToCsStyleName($"{defField.Name}_{recordIndexValue}");
 
         return functionName;
+    }
+
+
+    // 递归查找 MythBean 的完整路径
+    public static (int[]?, DefBean) FindMythBeanPath(DefBean defBean, HashSet<DefBean> mythBeans)
+    {
+        // 直接检查当前 Bean 是否是 MythBean
+        if (mythBeans.Contains(defBean))
+        {
+            return (new int[0], defBean);
+        }
+
+        // 递归检查该 Bean 的所有字段
+        for (int i = 0; i < defBean.ExportFields.Count; i++)
+        {
+            var field = defBean.ExportFields[i];
+            // 确保字段类型是 TBean
+            if (field.CType is TBean beanType)
+            {
+                var (subPath, result) = FindMythBeanPath(beanType.DefBean, mythBeans);
+                if (subPath != null)
+                {
+                    // 构建完整路径：当前字段索引 + 子路径
+                    var fullPath = new int[subPath.Length + 1];
+                    fullPath[0] = i;
+                    Array.Copy(subPath, 0, fullPath, 1, subPath.Length);
+                    return (fullPath, result);
+                }
+            }
+        }
+
+        return (null, null);
     }
 
     // private JObject ReadSafeReferenceMethodsFromFile()

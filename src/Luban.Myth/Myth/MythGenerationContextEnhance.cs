@@ -19,6 +19,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
     }
 
     private Dictionary<DefBean, MetadataEnhance> _parsingCache = new Dictionary<DefBean, MetadataEnhance>();
+    private HashSet<DefBean> _mythBeanCache = new HashSet<DefBean>();
     private DefBean _metadataBean;
     private DefEnum _metadataEvaluateType;
     private DefEnum _metadataOperator;
@@ -79,6 +80,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             if (result.Item1 != null)
             {
                 _parsingCache.Add(result.Item1, result.Item2);
+                _mythBeanCache.Add(result.Item1);
             }
         }
     }
@@ -101,9 +103,20 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             for (int i = 0; i < defTable.ValueTType.DefBean.ExportFields.Count; ++i)
             {
                 var tableField = defTable.ValueTType.DefBean.ExportFields[i];
-                if (tableField.CType is TBean fieldBean && _parsingCache.TryGetValue(fieldBean.DefBean, out var value))
+                if (tableField.CType is TBean tableFieldBean)
                 {
-                    AppendMythMetadata(defTable, records, i, value, tableField);
+                    if (_parsingCache.TryGetValue(tableFieldBean.DefBean, out var value))
+                    {
+                        AppendMythMetadata(defTable, records, new[] { i }, value, tableField);
+                    }
+                    else
+                    {
+                        var (mythBeanPath, resultDefBean) = MythDataExport.FindMythBeanPath(tableFieldBean.DefBean, _mythBeanCache);
+                        if (mythBeanPath != null && _parsingCache.TryGetValue(resultDefBean, out var value1))
+                        {
+                            AppendMythMetadata(defTable, records, new int[] { i }.Concat(mythBeanPath).ToArray(), value1, tableField);
+                        }
+                    }
                 }
             }
         }
@@ -165,14 +178,30 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
     }
 
 
-    private void AppendMythMetadata(DefTable mythTable, List<Record> records, int targetTableDefBeanFieldIndex, MetadataEnhance metadataEnhance,
-        DefField defFieldInTable)
+    private void AppendMythMetadata(DefTable mythTable, List<Record> records, int[] targetTableDefBeanFieldPath, MetadataEnhance metadataEnhance, DefField defFieldInTable)
     {
         var targetParsingFieldIndex = metadataEnhance.targetParsingFieldIndex;
+        var WalkByPath = (DBean data, int[] path) =>
+        {
+            var current = (DType)data;
+            foreach (var index in path)
+            {
+                if (current is DBean dBean)
+                {
+                    current = dBean.Fields[index];
+                }
+                else
+                {
+                    throw new Exception("Invalid path");
+                }
+            }
+
+            return current;
+        };
         // var enumType = TEnum.Create(false, parsingToEnum, parsingToEnum!.Tags);
         foreach (var record in records)
         {
-            var dType = record.Data.Fields[targetTableDefBeanFieldIndex];
+            var dType = WalkByPath(record.Data, targetTableDefBeanFieldPath);
             if (dType is DBean dBean && dBean.Fields[targetParsingFieldIndex] is DString rawData)
             {
                 if (!string.IsNullOrEmpty(rawData.Value))

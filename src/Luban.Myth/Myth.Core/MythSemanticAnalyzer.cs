@@ -13,7 +13,10 @@
 
         private static MythExprNode? AnalyzeNode(MythExprNode? node, MythExprNode? parent)
         {
-            if (node == null) return null;
+            if (node == null)
+            {
+                return null;
+            }
 
             switch (node)
             {

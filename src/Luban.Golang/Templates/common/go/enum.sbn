@@ -2,6 +2,8 @@
 package {{__top_module}};
 {{~end~}}
 
+type {{__go_enum_name}} int32
+
 {{~if __this.comment != '' ~}}
 /**
  * {{escape_comment __this.comment}}
@@ -14,6 +16,27 @@ const (
      * {{escape_comment item.comment_or_alias}}
      */
 {{~end~}}
-    {{full_name __this}}_{{item.name}} = {{item.int_value}};
+    {{full_name __this}}_{{item.name}} {{__go_enum_name}} = {{item.int_value}};
     {{~end~}}
 )
+
+// {{__go_enum_name}}ToStr 新增两个映射变量，用于 int32 与 alias（枚举项名称）之间的双向映射
+func {{__go_enum_name}}ToStr(t {{__go_enum_name}}) string {
+	return {{__go_enum_name}}Int32ToAlias[int32(t)]
+}
+
+func {{__go_enum_name}}FromString(str string) {{__go_enum_name}} {
+	return {{__go_enum_name}}({{__go_enum_name}}AliasToInt32[str])
+}
+
+var {{__go_enum_name}}Int32ToAlias = map[int32]string{
+    {{~ for item in __this.items ~}}
+    {{item.int_value}}: "{{item.name}}", // 将 int32 值映射为枚举项的 alias
+    {{~ end ~}}
+}
+
+var {{__go_enum_name}}AliasToInt32 = map[string]int32{
+    {{~ for item in __this.items ~}}
+    "{{item.name}}": {{item.int_value}}, // 将枚举项的 alias 映射为 int32 值
+    {{~ end ~}}
+}
