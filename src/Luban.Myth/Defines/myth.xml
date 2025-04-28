@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 这里的内容与代码强相关，不要更改下面的内容 -->
+<module name="Myth"                  >
+    <bean comment="表达式的元数据"         name="MythMetadata"          >
+        <var comment="表达式类型"             name="evaluate_type"          type="Myth.MythEvaluateType"    />
+        <var comment="运算符"                 name="operator_type"          type="Myth.MythOperatorType"    />
+        <var comment="函数名"                 name="function_name"          type="string"                   />
+        <var comment="函数入参"               name="parameters"             type="array,string"             />
+        <var comment="是否为可变数量参数类型" name="is_params"              type="bool"                     />
+        <var comment="函数参数类型"           name="parameter_types"        type="array,Myth.MythValueType" />
+        <var comment="函数返回值类型"         name="return_type"            type="Myth.MythValueType"       />
+        <var comment="字面值常量"             name="literal_value"          type="string"                   />
+        <var comment="字面值的作用位置"       name="is_literal_left_side"    type="bool"                     />
+    </bean>
+    <bean name="MythRpnToken" comment="RPN执行单元">
+        <var name="kind" type="Myth.MythRpnTokenType" comment="token类型" />
+        <var name="meta_index" type="int" comment="元数据索引" />
+        <var name="logic_symbol" type="Myth.MythLogicalType" comment="逻辑符号" />
+    </bean>
+    <enum name="MythRpnTokenType" unique="TRUE">
+        <var name="Unknown" value="0" />
+        <var name="MetadataExpression" value="1" />
+        <var name="LogicOperator" value="2" />
+    </enum>
+    <enum name="MythEvaluateType"       unique="TRUE">
+        <var name="Unknown"                value="0" />
+        <var name="GetInt"                 value="1" />
+        <var name="GetBool"                value="2" />
+        <var name="EvalFunction"           value="3" />
+        <var name="EvalFunctionReturnBool" value="4" />
+    </enum>
+    <enum name="MythValueType"          unique="TRUE">
+        <var name="Unknown"                value="0" />
+        <var name="Int"                    value="1" />
+        <var name="IntTenThousandth"       value="2" />
+        <var name="Float"                  value="3" />
+        <var name="Bool"                   value="4" />
+        <var name="String"                 value="5" />
+        <var name="Enum"                   value="6" />
+    </enum>
+    <enum name="MythOperatorType"       unique="TRUE">
+        <var name="Unknown"                value="0" />
+        <var name="Equal"                  value="3" />
+        <var name="NotEqual"               value="4" />
+        <var name="Greater"                value="5" />
+        <var name="GreaterEqual"           value="6" />
+        <var name="Less"                   value="7" />
+        <var name="LessEqual"              value="8" />
+    </enum>
+    <enum name="MythLogicalType"        unique="TRUE">
+        <var name="Unknown"                value="0" />
+        <var name="And"                    value="1" />
+        <var name="Or"                     value="2" />
+    </enum>
+</module>

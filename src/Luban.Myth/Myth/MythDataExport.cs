@@ -271,9 +271,12 @@ public class MythDataExport : DataExporterBase
         var interfaceFile = mythCodeGenerator.GenerateMythInterface(ctx, interfaceName);
         outputManifest.AddFile(interfaceFile);
 
-        string outputSaverName = EnvManager.Current.GetOptionOrDefault(outputManifest.TargetName, BuiltinOptionNames.OutputSaver, true, "myth");
-        var saver = OutputSaverManager.Ins.GetOutputSaver(outputSaverName);
-        saver.Save(outputManifest);
+        if (!MythManager.Ins.MythConfig.IgnoreMythCodeOutput)
+        {
+            string outputSaverName = EnvManager.Current.GetOptionOrDefault(outputManifest.TargetName, BuiltinOptionNames.OutputSaver, true, "myth");
+            var saver = OutputSaverManager.Ins.GetOutputSaver(outputSaverName);
+            saver.Save(outputManifest);
+        }
     }
 
     public static string CreateMythMethodName(DefTable mythTable, Record record, DefField defField)

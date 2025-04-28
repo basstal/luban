@@ -38,10 +38,10 @@
       <None Update="Myth.Core\CharMapping.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Myth.Core\ParserRule.txt">
+      <None Update="Myth.Core\FunctionDefineExample.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Myth.Core\FunctionDefineExample.txt">
+      <None Update="Defines\myth.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Templates\golang\IMythConditionContextTemplate.sbn">

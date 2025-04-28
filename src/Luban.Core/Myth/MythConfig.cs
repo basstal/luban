@@ -5,6 +5,7 @@ public class MythConfig
     public string MythFunctionDefineFilePath { get; set; }
     public string OutputMythDir { get; set; }
     public string ImportPrefix { get; set; }
+    public bool IgnoreMythCodeOutput { get; set; }
 
     public string GetOutputSuffixByCodeTarget()
     {

@@ -16,6 +16,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
 
         public DefField defFieldMetadata;
         public DefField defFieldMethodName;
+        public DefField defFieldRpnToken;
     }
 
     private Dictionary<DefBean, MetadataEnhance> _parsingCache = new Dictionary<DefBean, MetadataEnhance>();
@@ -24,7 +25,10 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
     private DefEnum _metadataEvaluateType;
     private DefEnum _metadataOperator;
     private DefEnum _metadataValueType;
-
+    private DefEnum _rpnTokenType;
+    private DefEnum _rpnLogicalType;
+    private DefBean _rpnTokenBean;
+    private RpnBuilder _rpnBuilder;
     public static bool MythGenerationEnabled;
 
     public void EnhanceScheme(GenerationContext ctx)
@@ -69,6 +73,24 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             throw new FileNotFoundException("DefEnum MythValueType not found, maybe myth.xml is excluded?");
         }
 
+        _rpnTokenBean = ctx.ExportBeans.Find(defBean => defBean.Namespace == "Myth" && defBean.Name == "MythRpnToken")!;
+        if (_rpnTokenBean == null)
+        {
+            throw new FileNotFoundException("DefBean MythRpnToken not found, maybe myth.xml is excluded?");
+        }
+
+        _rpnTokenType = ctx.ExportEnums.Find(defEnum => defEnum.Namespace == "Myth" && defEnum.Name == "MythRpnTokenType")!;
+        if (_rpnTokenType == null)
+        {
+            throw new FileNotFoundException("DefEnum MythRpnTokenType not found, maybe myth.xml is excluded?");
+        }
+
+        _rpnLogicalType = ctx.ExportEnums.Find(defEnum => defEnum.Namespace == "Myth" && defEnum.Name == "MythLogicalType")!;
+        if (_rpnLogicalType == null)
+        {
+            throw new FileNotFoundException("DefEnum MythLogicalType not found, maybe myth.xml is excluded?");
+        }
+
         foreach (var defBean in ctx.ExportBeans)
         {
             if (!defBean.HasTag("IsMythBean"))
@@ -83,6 +105,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
                 _mythBeanCache.Add(result.Item1);
             }
         }
+        _rpnBuilder = new RpnBuilder(ctx.ExportEnums);
     }
 
     public void EnhanceLoadDatasAndValidate(GenerationContext genCtx)
@@ -141,40 +164,49 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             throw new Exception("IsMythContent tag not found in any field, Bean type " + bean.FullName);
         }
 
+        DefField CompileAndAddField(RawField rawField)
+        {
+            // 标记，以防拿着这个字段去读表
+            rawField.Tags = new Dictionary<string, string>() { { "MythMetadata", "" } };
+            rawField.NotNameValidation = false;
+            rawField.Groups = new List<string>();
+            rawField.Comment = string.Empty;
+            var defField = new DefField(bean, rawField, 0);
+            defField.Compile();
+            // result.Add(new DefField(bean, rawField, 0));
+            bean.Fields.Add(defField);
+            bean.HierarchyFields.Add(defField);
+            return defField;
+        }
         // 附加 myth 元数据到表格定义中，
         var rawFieldMethodName = new RawField()
         {
             Name = $"method_name",
             Type = $"string",
-            Comment = "",
-            // 标记，以防拿着这个字段去读表
-            Tags = new Dictionary<string, string>() { { "MythMetadata", "" } },
-            NotNameValidation = false,
-            Groups = new List<string>(),
         };
-        var defFieldMethodName = new DefField(bean, rawFieldMethodName, 0);
-        defFieldMethodName.Compile();
-        // result.Add(new DefField(bean, rawField, 0));
-        bean.Fields.Add(defFieldMethodName);
-        bean.HierarchyFields.Add(defFieldMethodName);
+        var defFieldMethodName = CompileAndAddField(rawFieldMethodName);
         // 这里直接附加 luban 定义好的 bean，名字是唯一的 "MythExpressionMetadata"
         var rawField = new RawField()
         {
             Name = $"metadata",
             Type = $"(list#sep=,),{_metadataBean.FullName}",
-            Comment = "",
-            // 标记，以防拿着这个字段去读表
-            Tags = new Dictionary<string, string>() { { "MythMetadata", "" } },
-            NotNameValidation = false,
-            Groups = new List<string>(),
         };
-        var defField = new DefField(bean, rawField, 0);
-        defField.Compile();
-        // result.Add(new DefField(bean, rawField, 0));
-        bean.Fields.Add(defField);
-        bean.HierarchyFields.Add(defField);
+        var defFieldMetadata = CompileAndAddField(rawField);
+        // 附加RPN执行单元
+        var rawFieldRpnToken = new RawField()
+        {
+            Name = $"rpn_token",
+            Type = $"(list#sep=,),{_rpnTokenBean.FullName}",
+        };
+        var defFieldRpnToken = CompileAndAddField(rawFieldRpnToken);
 
-        return (bean, new MetadataEnhance() { targetParsingFieldIndex = targetParsingFieldIndex, defFieldMetadata = defField, defFieldMethodName = defFieldMethodName });
+        return (bean, new MetadataEnhance()
+        {
+            targetParsingFieldIndex = targetParsingFieldIndex,
+            defFieldMetadata = defFieldMetadata,
+            defFieldMethodName = defFieldMethodName,
+            defFieldRpnToken = defFieldRpnToken
+        });
     }
 
 
@@ -213,20 +245,46 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
                     var parser = new MythParser(tokens);
                     MythExprNode ast = parser.ParseExpressionAndAnalyzeAST();
 
-                    // 3. 生成 C# 代码
+                    // 3. 收集元数据
                     string methodName = MythDataExport.CreateMythMethodName(mythTable, record, defFieldInTable);
-                    var metadataList = MythMetadataCollector.Collect(ast);
+                    // var metadataList = MythMetadataCollector.Collect(ast);
+                    _rpnBuilder.Clear();
+                    _rpnBuilder.Build(methodName, ast);
+
 
                     dBean.Fields.Add(DString.ValueOf(metadataEnhance.defFieldMethodName.CType, methodName));
-                    dBean.Fields.Add(ConvertMetadataToRawBean(metadataList, metadataEnhance));
+                    dBean.Fields.Add(ConvertMetadataToRawBean(_rpnBuilder.Metas, metadataEnhance));
+                    dBean.Fields.Add(ConvertRpnTokenToRawBean(_rpnBuilder.Tokens, metadataEnhance));
                 }
                 else
                 {
                     dBean.Fields.Add(DString.ValueOf(metadataEnhance.defFieldMethodName.CType, string.Empty));
                     dBean.Fields.Add(new DList((TList)metadataEnhance.defFieldMetadata.CType, new List<DType>()));
+                    dBean.Fields.Add(new DList((TList)metadataEnhance.defFieldRpnToken.CType, new List<DType>()));
                 }
             }
         }
+    }
+
+    private DType ConvertRpnTokenToRawBean(List<Token> tokens, MetadataEnhance metadataEnhance)
+    {
+        List<DType> tokensResultList = new List<DType>();
+
+        var rpnTokenBean = TBean.Create(true, _rpnTokenBean, new Dictionary<string, string>());
+        var rpnTokenTypeTEnum = TEnum.Create(true, _rpnTokenType, _rpnTokenType.Tags);
+        var rpnTokenLogicTypeTEnum = TEnum.Create(true, _rpnLogicalType, _rpnLogicalType.Tags);
+        foreach (var token in tokens)
+        {
+            List<DType> fields = new List<DType>();
+            // 参考 myth.xml，这里顺序是写死的，没有做检查，意味着 myth.xml 的定义顺序也不可变更
+            fields.Add(new DEnum(rpnTokenTypeTEnum, token.Kind.ToString()));
+            fields.Add(DInt.ValueOf(token.MetaIndex));
+            fields.Add(new DEnum(rpnTokenLogicTypeTEnum, token.LogicSymbol.ToString()));
+            var bean = new DBean(rpnTokenBean, _rpnTokenBean!, fields);
+            tokensResultList.Add(bean);
+        }
+
+        return new DList((TList)metadataEnhance.defFieldRpnToken.CType, tokensResultList);
     }
 
     private DType ConvertMetadataToRawBean(List<MythMetadata> metadataList, MetadataEnhance metadataEnhance)
@@ -240,7 +298,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         var metadataTString1 = TString.Create(true, new Dictionary<string, string>());
         var metadataTArrayString = TArray.Create(true, new Dictionary<string, string>(), metadataTString1);
         var metadataTString3 = TString.Create(true, new Dictionary<string, string>());
-        var metadataTString4 = TString.Create(true, new Dictionary<string, string>());
+        // var metadataTString4 = TString.Create(true, new Dictionary<string, string>());
         var metadataTArrayParameterType = TArray.Create(true, new Dictionary<string, string>(), metadataValueTypeTEnum);
 
         foreach (var metadata in metadataList)
@@ -253,12 +311,11 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             fields.Add(DString.ValueOf(metadataTString, metadata.Function));
             fields.Add(new DArray(metadataTArrayString, metadata.FunctionParameters.Select(parameter => (DType)DString.ValueOf(metadataTString1, parameter)).ToList()));
             fields.Add(DBool.ValueOf(metadata.IsParams));
-            fields.Add(new DArray(metadataTArrayParameterType,
-                metadata.FunctionParameterTypes.Select(parameterType => (DType)new DEnum(metadataValueTypeTEnum, parameterType.ToString())).ToList()));
+            fields.Add(new DArray(metadataTArrayParameterType, metadata.FunctionParameterTypes.Select(parameterType => (DType)new DEnum(metadataValueTypeTEnum, parameterType.ToString())).ToList()));
             fields.Add(new DEnum(metadataValueTypeTEnum, metadata.FunctionReturnType.ToString()));
             // 字面值
             fields.Add(DString.ValueOf(metadataTString3, metadata.CompareToLiteralValue));
-            fields.Add(DString.ValueOf(metadataTString4, metadata.CompareLiteralContext));
+            fields.Add(DBool.ValueOf(metadata.IsCompareLiteralLeftSide));
             var bean = new DBean(metadataTBean, _metadataBean!, fields);
             metadataResultList.Add(bean);
         }

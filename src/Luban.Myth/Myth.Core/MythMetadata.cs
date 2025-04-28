@@ -1,4 +1,9 @@
-﻿namespace Myth
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Luban.Defs;
+
+namespace Myth
 {
     public class MythMetadata
     {
@@ -16,7 +21,7 @@
         public MythCompareOp Operator = MythCompareOp.Unknown;
         public MythValueType FunctionReturnType = MythValueType.Unknown;
         public string CompareToLiteralValue = string.Empty;
-        public string CompareLiteralContext = string.Empty;
+        public bool IsCompareLiteralLeftSide;
         public string EvaluateType = string.Empty;
         public bool IsParams { get; set; }
 
@@ -25,14 +30,14 @@
 
     public static class MythMetadataCollector
     {
-        public static List<MythMetadata> Collect(MythExprNode node)
+        public static List<MythMetadata> Collect(MythExprNode node, List<DefEnum> exportEnums)
         {
             var metaList = new List<MythMetadata>();
-            Traverse(node, metaList);
+            Traverse(node, metaList, exportEnums);
             return metaList;
         }
 
-        private static void Traverse(MythExprNode node, List<MythMetadata> metaList)
+        private static void Traverse(MythExprNode node, List<MythMetadata> metaList, List<DefEnum> exportEnums)
         {
             if (node == null)
             {
@@ -43,20 +48,20 @@
             {
                 var leftMeta = new MythMetadata();
                 var rightMeta = new MythMetadata();
-                Traverse(ln2.Left, new List<MythMetadata> { leftMeta });
-                Traverse(ln2.Right, new List<MythMetadata> { rightMeta });
+                Traverse(ln2.Left, new List<MythMetadata> { leftMeta }, exportEnums);
+                Traverse(ln2.Right, new List<MythMetadata> { rightMeta }, exportEnums);
                 metaList.Add(leftMeta);
                 metaList.Add(rightMeta);
             }
             else
             {
                 var meta = new MythMetadata();
-                CollectMetadata(node, meta);
+                CollectMetadata(node, meta, exportEnums);
                 metaList.Add(meta);
             }
         }
 
-        private static void CollectMetadata(MythExprNode node, MythMetadata meta)
+        public static void CollectMetadata(MythExprNode node, MythMetadata meta, List<DefEnum> exportEnums)
         {
             if (node == null)
             {
@@ -105,12 +110,45 @@
                     meta.FunctionReturnType = fn.ReturnType;
                     meta.FunctionParameterTypes = fn.FunctionSignature.ParamTypes;
                     meta.EvaluateType = MythConverter.GetEvalFunctionByFunctionSignature(fn.FunctionSignature);
-                    foreach (var arg in fn.Arguments)
+                    for (int i = 0; i < fn.Arguments.Count; i++)
                     {
-                        CollectMetadata(arg, meta);
+                        var arg = fn.Arguments[i];
+                        CollectMetadata(arg, meta, exportEnums);
                         if (arg is LiteralNode ln2)
                         {
-                            meta.FunctionParameters.Add(ln2.RawValue);
+                            if (ln2.ValueType == MythValueType.IntTenThousandth)
+                            {
+                                var value = ((int)(float.Parse(ln2.RawValue) * 10000)).ToString();
+                                meta.FunctionParameters.Add(value);
+                            }
+                            else if (ln2.ValueType == MythValueType.Enum)
+                            {
+                                if (fn.FunctionSignature.ParamActualTypeDict.TryGetValue(i, out var actualTypeStr))
+                                {
+                                    // 从 luban 的 enum 定义中反射获取 actualTypeStr 对应的 DefEnum，并使用 DefEnum 反射中文的 RawValue 到对应的 Enum 内容。
+                                    var enumDef = exportEnums.Find(defEnum => defEnum.FullName == actualTypeStr);
+                                    if (enumDef == null)
+                                    {
+                                        throw new NotImplementedException($"Enum {actualTypeStr} not found in export enums");
+                                    }
+
+                                    var enumItem = enumDef.Items.Find(item => item.Name == ln2.RawValue || item.Alias == ln2.RawValue);
+                                    if (enumItem == null)
+                                    {
+                                        throw new NotImplementedException($"Enum item {ln2.RawValue} not found in enum {actualTypeStr}");
+                                    }
+
+                                    meta.FunctionParameters.Add(enumItem.IntValue.ToString());
+                                }
+                                else
+                                {
+                                    throw new NotImplementedException($"函数 {fn.FuncName} 的第 {i + 1} 个参数类型不是 枚举 ？但是调用的参数却传入了 枚举 类型？");
+                                }
+                            }
+                            else
+                            {
+                                meta.FunctionParameters.Add(ln2.RawValue);
+                            }
                         }
                     }
 
@@ -119,17 +157,9 @@
                 case ComparisonNode cn:
                     meta.Operator = cn.Operator;
                     // 目前 metadata 仅支持单边为字面值常量
-                    if (cn.Left is LiteralNode)
-                    {
-                        meta.CompareLiteralContext = "Left";
-                    }
-                    else
-                    {
-                        meta.CompareLiteralContext = "Right";
-                    }
-
-                    CollectMetadata(cn.Left, meta);
-                    CollectMetadata(cn.Right, meta);
+                    meta.IsCompareLiteralLeftSide = cn.Left is LiteralNode;
+                    CollectMetadata(cn.Left, meta, exportEnums);
+                    CollectMetadata(cn.Right, meta, exportEnums);
                     break;
             }
         }
