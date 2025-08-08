@@ -142,6 +142,10 @@ public class MythLexer
                     tokens.Add(new MythToken(MythTokenType.Comma, ","));
                     Advance();
                     break;
+                case ';':
+                    tokens.Add(new MythToken(MythTokenType.Semicolon, ";"));
+                    Advance();
+                    break;
                 default:
                     // 简化：遇到无法识别的字符，就跳过
                     Advance();
@@ -210,7 +214,8 @@ public class MythLexer
 
         string text = _input.Substring(start, _pos - start);
         // 跳过结束引号
-        if (!IsEnd()) Advance();
+        if (!IsEnd())
+            Advance();
 
         return new MythToken(MythTokenType.StringLiteral, text);
     }

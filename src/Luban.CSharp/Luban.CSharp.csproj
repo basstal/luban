@@ -106,7 +106,7 @@
       <None Update="Templates\cs-editor-json\enum.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-      <None Update="Templates\cs-bin\xlsxOpener.sbn">
+      <None Update="Templates\common\cs\xlsxOpener.sbn">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

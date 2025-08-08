@@ -28,4 +28,68 @@ public class LiteralNode : MythExprNode
     {
         _litType = newType;
     }
+
+    // public static bool IsEqual(MythValueType a, MythValueType b)
+    // {
+    //     if (a == MythValueType.IntTenThousandth || a == MythValueType.Float)
+    //     {
+    //         return b == MythValueType.IntTenThousandth || b == MythValueType.Float;
+    //     }
+    //     if (a == MythValueType.Int || a == MythValueType.IntTenThousandth)
+    //     {
+    //         return b == MythValueType.Int || b == MythValueType.IntTenThousandth;
+    //     }
+    //     return a == b;
+    // }
+
+    public static bool CanConvert(MythValueType from, MythValueType to)
+    {
+        if (from == to)
+        {
+            return true;
+        }
+        switch (from)
+        {
+            case MythValueType.IntTenThousandth:
+                return to == MythValueType.Float || to == MythValueType.Int;
+            case MythValueType.Float:
+                return to == MythValueType.IntTenThousandth;
+            case MythValueType.Int:
+                return to == MythValueType.IntTenThousandth || to == MythValueType.Float;
+        }
+        return false;
+    }
+
+    public void ConvertToType(MythValueType to)
+    {
+        switch (_litType)
+        {
+            case MythValueType.IntTenThousandth:
+                if (to == MythValueType.Int)
+                {
+                    throw new NotImplementedException();
+                }
+                if (to == MythValueType.Float)
+                {
+                    // do nothing
+                }
+                break;
+            case MythValueType.Float:
+                if (to == MythValueType.IntTenThousandth)
+                {
+                    // do nothing
+                }
+                break;
+            case MythValueType.Int:
+                if (to == MythValueType.IntTenThousandth)
+                {
+                    // do nothing
+                }
+                if (to == MythValueType.Float)
+                {
+                    _litType = MythValueType.Float;
+                }
+                break;
+        }
+    }
 }

@@ -61,7 +61,7 @@ public class MythManager
             throw new InvalidOperationException("myth config file is invalid");
         }
         MythConfig.PostProcessRelativePath(mythConfigFile);
-        Console.WriteLine($"mythConfig : {MythConfig}");
+        // Console.WriteLine($"mythConfig : {MythConfig}");
     }
 
     // public void ScanRegisterAll(Assembly assembly)

@@ -71,38 +71,36 @@ namespace Myth
             switch (node)
             {
                 case LiteralNode ln:
-                    if (ln.ValueType == MythValueType.Int)
+                {
+                    switch (ln.ValueType)
                     {
-                        meta.IntLiterals.Add(ln.RawValue);
-                        meta.CompareToLiteralValue = ln.RawValue;
+                        case MythValueType.Int:
+                            meta.IntLiterals.Add(ln.RawValue);
+                            meta.CompareToLiteralValue = ln.RawValue;
+                            break;
+                        case MythValueType.Float:
+                        case MythValueType.IntTenThousandth:
+                            var value = ((int)(float.Parse(ln.RawValue) * 10000)).ToString();
+                            meta.IntLiterals.Add(value);
+                            meta.CompareToLiteralValue = value;
+                            break;
+                        case MythValueType.String:
+                            meta.StringLiterals.Add(ln.RawValue);
+                            meta.CompareToLiteralValue = ln.RawValue;
+                            break;
+                        case MythValueType.Bool:
+                            meta.BoolLiterals.Add(ln.RawValue);
+                            meta.CompareToLiteralValue = ln.RawValue;
+                            break;
+                        case MythValueType.Enum:
+                            meta.EnumLiterals.Add(ln.RawValue);
+                            meta.CompareToLiteralValue = ln.RawValue;
+                            break;
+                        default:
+                            throw new NotImplementedException($"不支持的常量类型: {ln.ValueType}, 常量值: {ln.RawValue}");
                     }
-
-                    if (ln.ValueType == MythValueType.IntTenThousandth)
-                    {
-                        var value = ((int)(float.Parse(ln.RawValue) * 10000)).ToString();
-                        meta.IntLiterals.Add(value);
-                        meta.CompareToLiteralValue = value;
-                    }
-
-                    if (ln.ValueType == MythValueType.String)
-                    {
-                        meta.StringLiterals.Add(ln.RawValue);
-                        meta.CompareToLiteralValue = ln.RawValue;
-                    }
-
-                    if (ln.ValueType == MythValueType.Bool)
-                    {
-                        meta.BoolLiterals.Add(ln.RawValue);
-                        meta.CompareToLiteralValue = ln.RawValue;
-                    }
-
-                    if (ln.ValueType == MythValueType.Enum)
-                    {
-                        meta.EnumLiterals.Add(ln.RawValue);
-                        meta.CompareToLiteralValue = ln.RawValue;
-                    }
-
                     break;
+                }
 
                 case FunctionCallNode fn:
                     meta.Function = fn.FuncName;
@@ -135,7 +133,7 @@ namespace Myth
                                     var enumItem = enumDef.Items.Find(item => item.Name == ln2.RawValue || item.Alias == ln2.RawValue);
                                     if (enumItem == null)
                                     {
-                                        throw new NotImplementedException($"Enum item {ln2.RawValue} not found in enum {actualTypeStr}");
+                                        throw new NotImplementedException($"Enum item {ln2.RawValue} not found in enum {actualTypeStr}\n可选的枚举值有：[{string.Join(", ", enumDef.Items.Select(item => item.Name))}]");
                                     }
 
                                     meta.FunctionParameters.Add(enumItem.IntValue.ToString());
@@ -161,6 +159,18 @@ namespace Myth
                     CollectMetadata(cn.Left, meta, exportEnums);
                     CollectMetadata(cn.Right, meta, exportEnums);
                     break;
+                case ListNode list:
+                {
+                    foreach (var item in list.Elements)
+                    {
+                        CollectMetadata(item, meta, exportEnums);
+                        var collectedValue = meta.CompareToLiteralValue;
+                        meta.FunctionParameters.Add(collectedValue);
+                    }
+                    break;
+                }
+                default:
+                    throw new NotImplementedException($"MythMetadataCollector 收集时不支持的节点类型: {node.GetType()}");
             }
         }
     }

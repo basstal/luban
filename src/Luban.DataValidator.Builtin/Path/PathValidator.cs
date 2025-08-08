@@ -78,6 +78,15 @@ public class PathValidator : DataValidatorBase
                 _pathPattern = new UnityAddressablePattern();
                 break;
             }
+            case "unity_prefab":
+            {
+                if (ss.Length != 1)
+                {
+                    ThrowCompileError(field, "");
+                }
+                _pathPattern = new UnityPrefabPattern();
+                break;
+            }
             case "ue":
             {
                 if (ss.Length != 1)

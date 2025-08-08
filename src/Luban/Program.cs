@@ -116,6 +116,7 @@ internal static class Program
         if (e is DataCreateException dce)
         {
             extract = dce;
+            s_logger.Error("DataCreateException: {0}\n{1}", dce.InnerException?.Message, dce.StackTrace);
             return true;
         }
 

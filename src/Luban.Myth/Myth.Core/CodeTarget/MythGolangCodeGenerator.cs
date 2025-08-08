@@ -47,6 +47,11 @@ namespace Myth
                     {
                         return ln.RawValue; // 直接输出数字
                     }
+                    case MythValueType.Float:
+                    {
+                        // 转成万分位整数
+                        return ((int)(float.Parse(ln.RawValue) * 10000)).ToString();
+                    }
                     case MythValueType.IntTenThousandth:
                     {
                         if (FunctionSignature.ShouldCastToTenThousandth(ln, parent)) // 转成万分位整数

@@ -197,6 +197,8 @@
                     return MythValueType.String;
                 case "枚举":
                     return MythValueType.Enum;
+                case "浮点数":
+                    return MythValueType.Float;
                 default:
                     return MythValueType.Unknown;
             }

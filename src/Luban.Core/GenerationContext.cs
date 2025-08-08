@@ -229,6 +229,77 @@ public class GenerationContext
         return sortedRecords;
     }
 
+    private static int CompareDTypes(DType a, DType b)
+    {
+        if (a == null && b == null)
+        { return 0; }
+        if (a == null)
+        { return -1; }
+        if (b == null)
+        { return 1; }
+
+        switch (a)
+        {
+            case DBool valA:
+                return valA.Value.CompareTo((b as DBool).Value);
+            case DByte valA:
+                return valA.Value.CompareTo((b as DByte).Value);
+            case DShort valA:
+                return valA.Value.CompareTo((b as DShort).Value);
+            case DInt valA:
+                return valA.Value.CompareTo((b as DInt).Value);
+            case DLong valA:
+                return valA.Value.CompareTo((b as DLong).Value);
+            case DFloat valA:
+                return valA.Value.CompareTo((b as DFloat).Value);
+            case DDouble valA:
+                return valA.Value.CompareTo((b as DDouble).Value);
+            case DString valA:
+                return string.Compare(valA.Value, (b as DString).Value, StringComparison.Ordinal);
+            case DDateTime valA:
+                return valA.Time.CompareTo((b as DDateTime).Time);
+            case DEnum valA:
+                return valA.Value.CompareTo((b as DEnum).Value);
+            default:
+                throw new NotSupportedException($"not support sort type:'{a.GetType().Name}'");
+        }
+    }
+
+    public static List<Record> ToSortByMultiKeyDataList(DefTable table, List<Record> originRecords)
+    {
+        var sortableFields = table.ValueTType.DefBean.HierarchyFields
+            .Select(f => new { Field = f, TagValue = f.Tags.TryGetValue("SortBy", out var tag) ? tag : null })
+            .Where(f => f.TagValue != null && int.TryParse(f.TagValue, out _))
+            .Select(f => new { f.Field, SortOrder = int.Parse(f.TagValue) })
+            .OrderBy(f => f.SortOrder)
+            .Select(f => f.Field)
+            .ToList();
+
+        if (sortableFields.Count == 0)
+        {
+            return new List<Record>(originRecords);
+        }
+
+        var sortedRecords = new List<Record>(originRecords);
+
+        sortedRecords.Sort((a, b) =>
+        {
+            foreach (var field in sortableFields)
+            {
+                var dataA = a.Data.GetField(field.Name);
+                var dataB = b.Data.GetField(field.Name);
+
+                int result = CompareDTypes(dataA, dataB);
+                if (result != 0)
+                {
+                    return result;
+                }
+            }
+            return 0;
+        });
+        return sortedRecords;
+    }
+
     public TableDataInfo GetTableDataInfo(DefTable table)
     {
         return _recordsByTables[table.FullName];

@@ -77,6 +77,24 @@
                     ln2.Left = AnalyzeNode(ln2.Left, ln2);
                     ln2.Right = AnalyzeNode(ln2.Right, ln2);
                     break;
+                case ListNode list:
+                {
+                    // listNode 内只允许 literalNode
+                    foreach (var item in list.Elements)
+                    {
+                        if (item is not LiteralNode ln)
+                        {
+                            throw new Exception($"ListNode 内只允许 literalNode");
+                        }
+                        if (ln.ValueType == MythValueType.Unknown)
+                        {
+                            ln.SetType(MythValueType.String);
+                        }
+                    }
+                    break;
+                }
+                default:
+                    throw new Exception($"MythSemanticAnalyzer.AnalyzeNode 不支持的节点类型: {node.GetType()}");
             }
 
             return node;

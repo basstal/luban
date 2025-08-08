@@ -103,6 +103,13 @@ class YamlDataCreator : ITypeFuncVisitor<YamlNode, DefAssembly, DType>
                     fields.Add(null);
                     continue;
                 }
+                // Console.WriteLine($"[YamlDataCreator] Accept TBean 当前节点: {m}");
+                // Console.WriteLine($"[YamlDataCreator] Accept TBean 当前节点子节点类型: {m.Children.GetType().FullName}");
+                // foreach (var kv in m.Children)
+                // {
+                //     Console.WriteLine($"[YamlDataCreator] 子节点key类型: {kv.Key.GetType().Name}, key内容: {kv.Key}");
+                //     Console.WriteLine($"[YamlDataCreator] 子节点value类型: {kv.Value.GetType().Name}, value内容: {kv.Value}");
+                // }
                 throw new Exception($"bean:{implBean.FullName} 字段:{f.Name} 缺失");
             }
             try

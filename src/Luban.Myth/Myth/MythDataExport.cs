@@ -30,7 +30,8 @@ public class MythDataExport : DataExporterBase
     {
         // Dictionary<DefEnum, Dictionary<int, ParameterType>> enumToParameterType = new Dictionary<DefEnum, Dictionary<int, ParameterType>>();
         // 找到所有的 MythBean
-        Dictionary<DefBean, int> mythBeans = new Dictionary<DefBean, int>();
+        Dictionary<DefBean, (int, bool)> mythBeans = new Dictionary<DefBean, (int, bool)>();
+        bool skipCodeGeneration = false;
         foreach (var defBean in ctx.ExportBeans)
         {
             if (defBean.HasTag("IsMythBean"))
@@ -43,6 +44,7 @@ public class MythDataExport : DataExporterBase
                     // 一个 MythBean 目前应该只有一个 MythContent
                     if (exportField.HasTag("IsMythContent"))
                     {
+                        skipCodeGeneration = exportField.HasTag("MythNoRpn");
                         mythContentFieldIndex = i;
                         break;
                     }
@@ -91,7 +93,7 @@ public class MythDataExport : DataExporterBase
                     throw new InvalidOperationException("IsMythBean 必须定义有一个 IsMythContent 字段");
                 }
 
-                mythBeans.Add(defBean, mythContentFieldIndex);
+                mythBeans.Add(defBean, (mythContentFieldIndex, skipCodeGeneration));
             }
         }
 
@@ -154,7 +156,8 @@ public class MythDataExport : DataExporterBase
             // var expressions = new List<ExpressionInfo>();
             var result = new Dictionary<string, (string, string)>();
             // 每一行数据
-            foreach (var record in ctx.GetTableExportDataList(mythTable))
+            var records = ctx.GetTableExportDataList(mythTable);
+            foreach (var record in records)
             {
                 // 每一个需要转为 expression 的列
                 foreach (var mythFieldPath in mythFieldIndices)
@@ -180,8 +183,16 @@ public class MythDataExport : DataExporterBase
                         dBeanField = nextDBean;
                     }
 
-                    var mythContentIndex = mythBeans[dBeanField.Type];
+                    var (mythContentIndex, skipCodeGenerationBean) = mythBeans[dBeanField.Type];
+                    if (skipCodeGenerationBean)
+                    {
+                        continue;
+                    }
                     var dValueMythContent = dBeanField.Fields[mythContentIndex];
+                    if (dValueMythContent == null)
+                    {
+                        continue;
+                    }
                     if (dValueMythContent is DString dStringMythContent)
                     {
                         if (string.IsNullOrEmpty(dStringMythContent.Value))

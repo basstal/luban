@@ -5,7 +5,7 @@
         <var comment="表达式类型"             name="evaluate_type"          type="Myth.MythEvaluateType"    />
         <var comment="运算符"                 name="operator_type"          type="Myth.MythOperatorType"    />
         <var comment="函数名"                 name="function_name"          type="string"                   />
-        <var comment="函数入参"               name="parameters"             type="array,string"             />
+        <var comment="函数入参，或 payload 参数"               name="parameters"             type="array,string"             />
         <var comment="是否为可变数量参数类型" name="is_params"              type="bool"                     />
         <var comment="函数参数类型"           name="parameter_types"        type="array,Myth.MythValueType" />
         <var comment="函数返回值类型"         name="return_type"            type="Myth.MythValueType"       />
@@ -37,6 +37,7 @@
         <var name="Bool"                   value="4" />
         <var name="String"                 value="5" />
         <var name="Enum"                   value="6" />
+        <var name="ValueArray"                 value="7" />
     </enum>
     <enum name="MythOperatorType"       unique="TRUE">
         <var name="Unknown"                value="0" />

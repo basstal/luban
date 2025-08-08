@@ -46,6 +46,11 @@ namespace Myth
                     {
                         return ln.RawValue; // 直接输出数字
                     }
+                    case MythValueType.Float:
+                    {
+                        // 转成万分位整数
+                        return ((int)(float.Parse(ln.RawValue) * 10000)).ToString();
+                    }
                     case MythValueType.IntTenThousandth:
                     {
                         if (FunctionSignature.ShouldCastToTenThousandth(ln, parent)) // 转成万分位整数
@@ -75,7 +80,7 @@ namespace Myth
                             var enumItem = enumDef.Items.Find(item => item.Name == ln.RawValue || item.Alias == ln.RawValue);
                             if (enumItem == null)
                             {
-                                throw new NotImplementedException($"Enum item {ln.RawValue} not found in enum {actualTypeStr}");
+                                throw new NotImplementedException($"Enum item {ln.RawValue} not found in enum {actualTypeStr}\n可选的枚举值有：[{string.Join(", ", enumDef.Items.Select(item => item.Name))}]");
                             }
 
 

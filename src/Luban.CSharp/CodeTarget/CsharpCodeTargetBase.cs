@@ -183,7 +183,7 @@ public abstract class CsharpCodeTargetBase : TemplateCodeTargetBase
 
         var outputFilePath = Path.Combine(codeOutputDir, $"{GetFileNameWithoutExtByTypeName(defEnum.FullName)}.{FileSuffixName}");
         // Console.WriteLine($"outputFilePath :{outputFilePath}");
-        var begin = "#region 自定义的枚举请填在下面，尽量使用大的枚举值以避免与 luban 转档的枚举值产生冲突";
+        var begin = "#region 自定义的枚举请填在下面，尽量使用大的枚举值以避免与 luban 转档的枚举值产生冲突，注意：当前编辑器和真机使用两个同名的 luban cs 脚本，添加自定义的枚举务必两边 cs 脚本都添加";
         var end = "#endregion";
         // 初始化 EditableContent 结构
         var editableContent = new EditableContent { begin = begin, end = end, content = string.Empty };
@@ -239,13 +239,13 @@ public abstract class CsharpCodeTargetBase : TemplateCodeTargetBase
 
     public override void GenerateBean(GenerationContext ctx, DefBean bean, CodeWriter writer)
     {
-        foreach (var exportField in bean.ExportFields)
-        {
-            if (exportField.CType.IsEnum)
-            {
-                Console.WriteLine(CsharpTemplateExtension.DeclaringTypeName(exportField.CType));
-            }
-        }
+        // foreach (var exportField in bean.ExportFields)
+        // {
+        //     if (exportField.CType.IsEnum)
+        //     {
+        //         Console.WriteLine(CsharpTemplateExtension.DeclaringTypeName(exportField.CType));
+        //     }
+        // }
         base.GenerateBean(ctx, bean, writer);
     }
 

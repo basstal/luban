@@ -188,6 +188,10 @@ class ExcelStreamDataCreator : ITypeFuncVisitor<ExcelStream, DType>
         {
             try
             {
+                if (f.Tags.ContainsKey("MythMetadata")) // 这里数据是代码生成的，不需要从表中读，也不需要在表里配
+                {
+                    continue;
+                }
                 //string sep = f.Tags.TryGetValue("tag", out var s) ? s : null;
                 //if (string.IsNullOrWhiteSpace(sep))
                 //{
@@ -237,7 +241,12 @@ class ExcelStreamDataCreator : ITypeFuncVisitor<ExcelStream, DType>
                 return null;
             }
             DefBean implType = DataUtil.GetImplTypeByNameOrAlias(originBean, subType);
-            return new DBean(type, implType, CreateBeanFields(implType, x));
+            var beanFields = CreateBeanFields(implType, x);
+            // if (beanFields.Count < 1)
+            // {
+            //     throw new InvalidExcelDataException($"type:{originBean.FullName} 不能为空");
+            // }
+            return new DBean(type, implType, beanFields);
         }
         else
         {
@@ -259,7 +268,12 @@ class ExcelStreamDataCreator : ITypeFuncVisitor<ExcelStream, DType>
                     }
                 }
             }
-            return new DBean(type, originBean, CreateBeanFields(originBean, x));
+            var list = CreateBeanFields(originBean, x);
+            // if (list.Count < 1)
+            // {
+            //     throw new InvalidExcelDataException($"type:{originBean.FullName} 不能为空");
+            // }
+            return new DBean(type, originBean, list);
         }
     }
 

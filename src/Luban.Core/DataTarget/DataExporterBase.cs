@@ -16,7 +16,9 @@ public abstract class DataExporterBase : IDataExporter
             {
                 var tasks = tables.Select(table => Task.Run(() =>
                 {
-                    manifest.AddFile(dataTarget.ExportTable(table, ctx.GetTableExportDataList(table)));
+                    var records = ctx.GetTableExportDataList(table);
+                    records = GenerationContext.ToSortByMultiKeyDataList(table, records);
+                    manifest.AddFile(dataTarget.ExportTable(table, records));
                 })).ToArray();
                 Task.WaitAll(tasks);
                 break;
@@ -31,7 +33,9 @@ public abstract class DataExporterBase : IDataExporter
                 var tasks = new List<Task>();
                 foreach (var table in tables)
                 {
-                    foreach (var record in ctx.GetTableExportDataList(table))
+                    var records = ctx.GetTableExportDataList(table);
+                    records = GenerationContext.ToSortByMultiKeyDataList(table, records);
+                    foreach (var record in records)
                     {
                         tasks.Add(Task.Run(() =>
                         {

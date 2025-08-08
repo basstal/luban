@@ -14,27 +14,27 @@ public class MythParser
     public MythExprNode ParseExpressionAndAnalyzeAST()
     {
         // 对应 Expression -> OrExpr
-        var result = ParseOrExpr();
+        var result = ParseOrExpr(true);
         // 分析 AST
         result = MythSemanticAnalyzer.AnalyzeAST(result);
 
         return result!;
     }
 
-    public MythExprNode ParseExpression()
+    public MythExprNode ParseExpression(bool allowList = true)
     {
         // 对应 Expression -> OrExpr
-        return ParseOrExpr();
+        return ParseOrExpr(allowList);
     }
 
     // 解析 Or
-    private MythExprNode ParseOrExpr()
+    private MythExprNode ParseOrExpr(bool allowList = true)
     {
-        var left = ParseAndExpr();
+        var left = ParseAndExpr(allowList);
         while (Match(MythTokenType.OrOr))
         {
             Consume(MythTokenType.OrOr); // 消耗 ||
-            var right = ParseAndExpr();
+            var right = ParseAndExpr(allowList);
             left = new LogicalNode(left, MythLogicalOp.Or, right);
         }
 
@@ -42,13 +42,13 @@ public class MythParser
     }
 
     // 解析 And
-    private MythExprNode ParseAndExpr()
+    private MythExprNode ParseAndExpr(bool allowList = true)
     {
-        var left = ParsePrimaryExpr();
+        var left = ParsePrimaryExpr(allowList);
         while (Match(MythTokenType.AndAnd))
         {
             Consume(MythTokenType.AndAnd); // 消耗 &&
-            var right = ParsePrimaryExpr();
+            var right = ParsePrimaryExpr(allowList);
             left = new LogicalNode(left, MythLogicalOp.And, right);
         }
 
@@ -56,25 +56,25 @@ public class MythParser
     }
 
     // 解析比较 / 括号优先级
-    private MythExprNode ParsePrimaryExpr()
+    private MythExprNode ParsePrimaryExpr(bool allowList = true)
     {
         // 括号优先
         if (Match(MythTokenType.LParen))
         {
             Consume(MythTokenType.LParen);
-            var expr = ParseExpression();
+            var expr = ParseExpression(allowList);
             Consume(MythTokenType.RParen);
             return expr;
         }
 
         // 否则解析Comparison
-        return ParseComparison();
+        return ParseComparison(allowList);
     }
 
-    private MythExprNode ParseComparison()
+    private MythExprNode ParseComparison(bool allowList = true)
     {
         // 先解析 leftTerm
-        var left = ParseValueExpr();
+        var left = ParseValueExpr(allowList);
         // 看下一个 Token 是否是比较运算符
         if (Match(MythTokenType.Equal, MythTokenType.NotEqual, MythTokenType.Greater,
                 MythTokenType.GreaterEq, MythTokenType.Less, MythTokenType.LessEq))
@@ -82,7 +82,7 @@ public class MythParser
             var opToken = Peek();
             var op = TokenToCompareOp(opToken.Type);
             Advance();
-            var right = ParseValueExpr();
+            var right = ParseValueExpr(allowList);
             return new ComparisonNode(left, op, right);
         }
 
@@ -90,40 +90,69 @@ public class MythParser
     }
 
     // 解析标识符/函数调用/字面值
-    private MythExprNode ParseValueExpr()
+    private MythExprNode ParseValueExpr(bool allowList = false)
     {
-        var token = Peek();
-        if (token.Type == MythTokenType.Identifier)
+        // 定义一个局部函数，专门解析单个literal/identifier
+        MythExprNode ParseSingleValue()
         {
-            // 有可能是函数调用
-            return ParseFunctionOrIdentifier();
-        }
-        else if (token.Type == MythTokenType.IntLiteral)
-        {
-            Advance();
-            return new LiteralNode(token.Text, MythValueType.Int);
-        }
-        else if (token.Type == MythTokenType.StringLiteral)
-        {
-            Advance();
-            return new LiteralNode(token.Text, MythValueType.String);
-        }
-        else if (token.Type == MythTokenType.BoolLiteral)
-        {
-            Advance();
-            return new LiteralNode(token.Text, MythValueType.Bool);
-        }
-        else if (token.Type == MythTokenType.FloatLiteral)
-        {
-            Advance();
-            return new LiteralNode(token.Text, MythValueType.Float);
+            var token = Peek();
+            switch (token.Type)
+            {
+                case MythTokenType.Identifier:
+                    return ParseFunctionOrIdentifier();
+                case MythTokenType.IntLiteral:
+                    Advance();
+                    return new LiteralNode(token.Text, MythValueType.Int);
+                case MythTokenType.StringLiteral:
+                    Advance();
+                    return new LiteralNode(token.Text, MythValueType.String);
+                case MythTokenType.BoolLiteral:
+                    Advance();
+                    return new LiteralNode(token.Text, MythValueType.Bool);
+                case MythTokenType.FloatLiteral:
+                    Advance();
+                    return new LiteralNode(token.Text, MythValueType.Float);
+                default:
+                    Advance();
+                    return null;
+            }
         }
 
-        // 如果都不是，返回一个空节点(简化处理)
-        Advance();
+        if (!allowList)
+        {
+            return ParseSingleValue();
+        }
+        // 允许逗号合并为 ListNode
+        var nodes = new List<MythExprNode>();
+        while (true)
+        {
+            var node = ParseSingleValue();
+            if (node != null)
+            {
+                nodes.Add(node);
+            }
+            if (Match(MythTokenType.Comma))
+            {
+                Consume(MythTokenType.Comma);
+                continue;
+            }
+            if (Match(MythTokenType.Semicolon))
+            {
+                Consume(MythTokenType.Semicolon);
+                continue;
+            }
+            break;
+        }
+        if (nodes.Count == 1)
+        {
+            return nodes[0];
+        }
+        else if (nodes.Count > 1)
+        {
+            return new ListNode(nodes);
+        }
         return null;
     }
-
 
     private MythExprNode ParseFunctionOrIdentifier()
     {
@@ -148,7 +177,7 @@ public class MythParser
                 // 解析参数列表
                 do
                 {
-                    var argExpr = ParseExpression();
+                    var argExpr = ParseExpression(false);
                     funcNode.Arguments.Add(argExpr);
                 } while (Match(MythTokenType.Comma) && Consume(MythTokenType.Comma) != null);
             }
@@ -189,12 +218,18 @@ public class MythParser
     {
         switch (type)
         {
-            case MythTokenType.Equal: return MythCompareOp.Equal;
-            case MythTokenType.NotEqual: return MythCompareOp.NotEqual;
-            case MythTokenType.Greater: return MythCompareOp.Greater;
-            case MythTokenType.GreaterEq: return MythCompareOp.GreaterEqual;
-            case MythTokenType.Less: return MythCompareOp.Less;
-            case MythTokenType.LessEq: return MythCompareOp.LessEqual;
+            case MythTokenType.Equal:
+                return MythCompareOp.Equal;
+            case MythTokenType.NotEqual:
+                return MythCompareOp.NotEqual;
+            case MythTokenType.Greater:
+                return MythCompareOp.Greater;
+            case MythTokenType.GreaterEq:
+                return MythCompareOp.GreaterEqual;
+            case MythTokenType.Less:
+                return MythCompareOp.Less;
+            case MythTokenType.LessEq:
+                return MythCompareOp.LessEqual;
             default:
                 throw new Exception("Unknown compare op token");
         }
@@ -203,7 +238,10 @@ public class MythParser
     // 工具函数
     private bool Match(params MythTokenType[] types)
     {
-        if (IsEnd()) return false;
+        if (IsEnd())
+        {
+            return false;
+        }
         var currentType = _tokens[_index].Type;
         return types.Contains(currentType);
     }
@@ -223,7 +261,10 @@ public class MythParser
     private MythToken Peek(int offset = 0)
     {
         if (_index + offset < _tokens.Count)
+        {
+
             return _tokens[_index + offset];
+        }
         return _tokens[_tokens.Count - 1]; // END
     }
 

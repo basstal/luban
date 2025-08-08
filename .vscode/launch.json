@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // Use IntelliSense to find out which attributes exist for C# debugging
+            // Use hover for the description of the existing attributes
+            // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
+            "name": ".NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/src/Luban/bin/Debug/net8.0/Luban.dll",
+            "args": [
+                "-t",
+                "client",
+                "-c",
+                "cs-simple-json",
+                "-d",
+                "json",
+                "--config",
+                "D:\\svn_repo\\trunk\\Externals\\luban/luban.conf",
+                "-x",
+                "outputDataDir=D:/svn_repo/trunk/Client/Assets/FD2/AssetBundle/Data/Json",
+                "outputCodeDir=D:\\svn_repo\\trunk\\Client\\Assets\\FD2\\Scripts\\Generated\\LubanEditor\\Code",
+                "l10n.provider=default",
+                "l10n.textFile.path=D:\\svn_repo\\trunk\\Externals\\xlsx/TextInfo.xlsx",
+                "l10n.textFile.keyFieldName=key",
+                "dataExporter=myth",
+                "mythConfig=D:\\svn_repo\\trunk\\Externals\\luban\\temp\\ClientMythConfig.json",
+                "pathValidator.rootDir=D:\\svn_repo\\trunk\\Client\\Assets\\FD2\\AssetBundle"
+            ],
+            "cwd": "${workspaceFolder}/src/Luban",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}

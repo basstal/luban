@@ -9,6 +9,7 @@ public enum MythValueType
     Bool,
     String,
     Enum,
+    ValueArray,
 }
 
 public enum MythCompareOp
@@ -52,5 +53,6 @@ public enum MythTokenType
     LParen = 13, // (
     RParen = 14, // )
     Comma = 15, // ,
-    End = 16 // 用于表示结束或未知
+    Semicolon = 16, // ;
+    End = 17 // 用于表示结束或未知
 }

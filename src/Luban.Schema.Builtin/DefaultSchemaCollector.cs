@@ -17,6 +17,10 @@ public class DefaultSchemaCollector : SchemaCollectorBase
         foreach (var importFile in _config.Imports)
         {
             s_logger.Debug("import schema file:{} type:{}", importFile.FileName, importFile.Type);
+            if (importFile.FileName.Contains("DS_Store")) // 强制过滤该文件以避免 MacOS 报错
+            {
+                continue;
+            }
             var schemaLoader = SchemaManager.Ins.CreateSchemaLoader(FileUtil.GetExtensionWithDot(importFile.FileName), importFile.Type, this);
             schemaLoader.Load(importFile.FileName);
         }

@@ -85,6 +85,15 @@ public {{class_modifier __bean}} partial class {{__name}} : {{if parent_def_type
         }
             {{~end~}}
         {{~end~}}
+#region Array
+        {{~for group in export_array_groups ~}}
+        {{format_property_name __code_style group.array_field.name}} = new {{declaring_type_name group.ctype}}[]{
+            {{~for field in group.def_fields ~}}
+            {{format_property_name __code_style field.name}},
+            {{~end~}}
+        };
+        {{~end~}}
+#endregion
     }
 
     public static {{__name}} Deserialize{{__name}}(JSONNode _buf)
@@ -120,6 +129,11 @@ public {{class_modifier __bean}} partial class {{__name}} : {{if parent_def_type
     public readonly {{declaring_type_name indexMapType}} {{get_index_var_name field}} = new {{declaring_type_name indexMapType}}();
    {{~end~}}
    {{~end~}}
+#region Array
+   {{~ for group in export_array_groups ~}}
+   public readonly {{declaring_type_name group.ctype}}[] {{format_property_name __code_style group.array_field.name}};
+   {{~ end ~}}
+#endregion
    
 {{~if !__bean.is_abstract_type && !__bean.is_value_type~}}
     public const int __ID__ = {{__bean.id}};
@@ -137,8 +151,6 @@ public {{class_modifier __bean}} partial class {{__name}} : {{if parent_def_type
         {{line}}
                 {{~end~}}
         {{~end~}}
-        
-        // TODO:没有做数组收集，如果需要再做
     }
 
     public override string ToString()
