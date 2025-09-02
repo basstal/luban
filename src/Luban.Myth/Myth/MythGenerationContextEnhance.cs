@@ -17,7 +17,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         public DefField defFieldMetadata;
         public DefField defFieldMethodName;
         public DefField? defFieldRpnToken;
-        public Dictionary<int, List<(MythValueType, string)>>? payloadValidators;
+        public Dictionary<int, List<(MythValueType, string, bool)>>? payloadValidators;
         public int payloadValidatorFieldIndex;
     }
     private static readonly NLog.Logger s_logger = NLog.LogManager.GetCurrentClassLogger();
@@ -219,7 +219,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         var rawFieldMethodName = new RawField()
         {
             Name = $"method_name",
-            Type = $"string?",
+            Type = $"string",
         };
         var defFieldMethodName = CompileAndAddField(rawFieldMethodName);
         // 这里直接附加 luban 定义好的 bean，名字是唯一的 "MythExpressionMetadata"
@@ -241,20 +241,21 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             defFieldRpnToken = CompileAndAddField(rawFieldRpnToken);
         }
 
-        Dictionary<int, List<(MythValueType, string)>>? payloadValidators = null;
+        Dictionary<int, List<(MythValueType, string, bool)>>? payloadValidators = null;
         if (payloadValidatorField != null)
         {
-            payloadValidators = new Dictionary<int, List<(MythValueType, string)>>();
+            payloadValidators = new Dictionary<int, List<(MythValueType, string, bool)>>();
             if (payloadValidatorField.CType is TEnum tEnum)
             {
                 var defEnum = tEnum.DefEnum;
                 foreach (var item in defEnum.Items)
                 {
                     var validatorContent = item.GetTag("MythPayloadValidator");
+                    var isValidatorIsParameter = item.HasTag("MythPayloadValidatorIsParams");
                     if (!string.IsNullOrEmpty(validatorContent))
                     {
                         var validatorContentList = validatorContent.Split(',');
-                        var mythValueTypes = new List<(MythValueType, string)>();
+                        var mythValueTypes = new List<(MythValueType, string, bool)>();
                         foreach (var oneParameter in validatorContentList)
                         {
                             // 提取 oneParameter 中类型和值，其中类型在后缀中以 [] 包裹
@@ -276,8 +277,9 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
                                 s_logger.Error($"[ERROR] PayloadValidator tag {oneParameter} is not valid, item {item.Name} in enum {defEnum.Name}");
                                 continue;
                             }
-                            mythValueTypes.Add((mythValueType, referenceDefType));
+                            mythValueTypes.Add((mythValueType, referenceDefType, false));
                         }
+                        mythValueTypes[^1] = (mythValueTypes[^1].Item1, mythValueTypes[^1].Item2, isValidatorIsParameter);
                         payloadValidators.Add(item.IntValue, mythValueTypes);
                     }
                 }
@@ -296,7 +298,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
     }
 
     // 新增：校验单个literal节点类型和表引用
-    private void ModifyAndValidateSingleLiteralNode(LiteralNode literalNode, (MythValueType, string) validator, string displayRawData, GenerationContext genCtx, int index = -1)
+    private void ModifyAndValidateSingleLiteralNode(LiteralNode literalNode, (MythValueType, string, bool) validator, string displayRawData, GenerationContext genCtx, int index = -1)
     {
         if (!string.IsNullOrEmpty(validator.Item2))
         {
@@ -359,7 +361,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         }
     }
 
-    void PayloadModifyAndValidation(MythExprNode ast, Dictionary<int, List<(MythValueType, string)>> payloadValidators, DType payloadValidatorField, string displayRawData, GenerationContext genCtx)
+    void PayloadModifyAndValidation(MythExprNode ast, Dictionary<int, List<(MythValueType, string, bool)>> payloadValidators, DType payloadValidatorField, string displayRawData, GenerationContext genCtx)
     {
         var payloadValidatorFieldEnum = payloadValidatorField as DEnum;
         if (!payloadValidators.TryGetValue(payloadValidatorFieldEnum.Value, out var validatorContext))
@@ -370,15 +372,27 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         }
         if (ast is ListNode listNode)
         {
-            if (listNode.Elements.Count != validatorContext.Count)
+            if (listNode.Elements.Count != validatorContext.Count && !validatorContext[^1].Item3)
             {
                 throw new Exception($"{displayRawData}，与 [{payloadValidatorFieldEnum.Type.DefEnum.FullName}] 枚举类型 [{payloadValidatorFieldEnum.StrValue}] 需要的参数数量不匹配，需要参数数量为 {validatorContext.Count}, 类型分别为 [{string.Join(",", validatorContext.Select(type => type.ToString()))}]");
             }
             for (int i = 0; i < validatorContext.Count; ++i)
             {
-                if (listNode.Elements[i] is LiteralNode literalNode)
+
+                var validator = validatorContext[i];
+                if (validator.Item3) // 用同样的 validator 验证所有的参数
                 {
-                    ModifyAndValidateSingleLiteralNode(literalNode, validatorContext[i], displayRawData, genCtx, i);
+                    for (int j = 0; j < listNode.Elements.Count; ++j)
+                    {
+                        if (listNode.Elements[j] is LiteralNode literalNode)
+                        {
+                            ModifyAndValidateSingleLiteralNode(literalNode, validator, displayRawData, genCtx, j);
+                        }
+                    }
+                }
+                else if (listNode.Elements[i] is LiteralNode literalNode)
+                {
+                    ModifyAndValidateSingleLiteralNode(literalNode, validator, displayRawData, genCtx, i);
                 }
             }
         }
@@ -464,6 +478,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
                         if (metadataList.Count == 1 && metadataList[0].FunctionParameters.Count == 0 && ast is LiteralNode)
                         {
                             metadataList[0].FunctionParameters.Add(metadataList[0].CompareToLiteralValue);
+                            metadataList[0].FunctionParameterTypes.Add(metadataList[0].CompareToLiteralValueType);
                         }
                         dBean.Fields.Add(DString.ValueOf(metadataEnhance.defFieldMethodName.CType, methodName));
                         dBean.Fields.Add(ConvertMetadataToRawBean(metadataList, metadataEnhance));

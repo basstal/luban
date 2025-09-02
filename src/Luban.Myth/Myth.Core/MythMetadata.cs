@@ -21,6 +21,7 @@ namespace Myth
         public MythCompareOp Operator = MythCompareOp.Unknown;
         public MythValueType FunctionReturnType = MythValueType.Unknown;
         public string CompareToLiteralValue = string.Empty;
+        public MythValueType CompareToLiteralValueType = MythValueType.Unknown;
         public bool IsCompareLiteralLeftSide;
         public string EvaluateType = string.Empty;
         public bool IsParams { get; set; }
@@ -77,24 +78,29 @@ namespace Myth
                         case MythValueType.Int:
                             meta.IntLiterals.Add(ln.RawValue);
                             meta.CompareToLiteralValue = ln.RawValue;
+                            meta.CompareToLiteralValueType = MythValueType.Int;
                             break;
                         case MythValueType.Float:
                         case MythValueType.IntTenThousandth:
                             var value = ((int)(float.Parse(ln.RawValue) * 10000)).ToString();
                             meta.IntLiterals.Add(value);
                             meta.CompareToLiteralValue = value;
+                            meta.CompareToLiteralValueType = MythValueType.IntTenThousandth;
                             break;
                         case MythValueType.String:
                             meta.StringLiterals.Add(ln.RawValue);
                             meta.CompareToLiteralValue = ln.RawValue;
+                            meta.CompareToLiteralValueType = MythValueType.String;
                             break;
                         case MythValueType.Bool:
                             meta.BoolLiterals.Add(ln.RawValue);
                             meta.CompareToLiteralValue = ln.RawValue;
+                            meta.CompareToLiteralValueType = MythValueType.Bool;
                             break;
                         case MythValueType.Enum:
                             meta.EnumLiterals.Add(ln.RawValue);
                             meta.CompareToLiteralValue = ln.RawValue;
+                            meta.CompareToLiteralValueType = MythValueType.Enum;
                             break;
                         default:
                             throw new NotImplementedException($"不支持的常量类型: {ln.ValueType}, 常量值: {ln.RawValue}");
