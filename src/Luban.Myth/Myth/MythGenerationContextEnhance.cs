@@ -370,6 +370,11 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             return;
             // throw new Exception($"payloadValidate 的 enum 值 {payloadValidatorFieldEnum.Value} 不存在，配置可能存在问题");
         }
+        // if (validatorContext.Any(entry => entry.Item2 == "Dialogue.TbDialogueEndingReward"))
+        // {
+
+        //     s_logger.Warn($"validator : {string.Join(",", validatorContext.Select(type => type.ToString()))}, displayRawData : {displayRawData}");
+        // }
         if (ast is ListNode listNode)
         {
             if (listNode.Elements.Count != validatorContext.Count && !validatorContext[^1].Item3)
@@ -432,6 +437,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         };
         var ProcessDBean = (DBean dBean, Record record, DString rawData) =>
         {
+            var payloadValidatorFieldData = metadataEnhance.payloadValidatorFieldIndex != -1 ? dBean.Fields[metadataEnhance.payloadValidatorFieldIndex] : null;
             if (!string.IsNullOrEmpty(rawData.Value))
             {
                 MythLexer lexer = new MythLexer(rawData.Value);
@@ -469,7 +475,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
                     if (metadataEnhance.payloadValidators != null)
                     {
                         var displayRawData = $"表 [{record.Source}] 的 [{defFieldInTable.Name}] 列存在数据校验 [{rawData.Value}] 错误";
-                        PayloadModifyAndValidation(ast, metadataEnhance.payloadValidators, dBean.Fields[metadataEnhance.payloadValidatorFieldIndex], displayRawData, genCtx);
+                        PayloadModifyAndValidation(ast, metadataEnhance.payloadValidators, payloadValidatorFieldData, displayRawData, genCtx);
                     }
                     try
                     {
@@ -492,6 +498,11 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             }
             else
             {
+                if (payloadValidatorFieldData is DEnum dEnum && dEnum.Value != 0)
+                {
+                    var defineField = dBean.TType.DefBean.Fields[metadataEnhance.payloadValidatorFieldIndex];
+                    s_logger.Error($"[ERROR] 表 [{record.Source}] 的 [{defFieldInTable.Name}] 的 {defineField.Name} 列存在非 None(0) 枚举值 {dEnum.StrValue}({dEnum.Value})，但是对应数据列值为空？？");
+                }
                 dBean.Fields.Add(DString.ValueOf(metadataEnhance.defFieldMethodName.CType, string.Empty));
                 dBean.Fields.Add(new DList((TList)metadataEnhance.defFieldMetadata.CType, new List<DType>()));
                 if (metadataEnhance.defFieldRpnToken != null)
