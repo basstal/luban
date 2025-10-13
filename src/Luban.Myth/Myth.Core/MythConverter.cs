@@ -32,19 +32,24 @@ public class MythConverter
         {
             case MythValueType.Int:
             case MythValueType.IntTenThousandth:
+            case MythValueType.Float:
+            {
                 if (!haveParams)
                 {
                     return "GetInt";
                 }
 
                 return "EvalFunction";
+            }
             case MythValueType.Bool:
+            {
                 if (!haveParams)
                 {
                     return "GetBool";
                 }
 
                 return "EvalFunctionReturnBool";
+            }
         }
 
         throw new NotImplementedException("GetEvalFunctionByFunctionSignature failed!");

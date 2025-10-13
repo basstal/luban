@@ -25,13 +25,17 @@
 
         public static bool ShouldCastToTenThousandth(LiteralNode ln, MythExprNode parent)
         {
-            if (!(parent is ComparisonNode comparisonNode))
+            if (parent is ComparisonNode comparisonNode)
             {
-                return false;
+                MythExprNode node = comparisonNode.Left == ln ? comparisonNode.Right! : comparisonNode.Left!;
+                return node is FunctionCallNode fn && (fn.ReturnType == MythValueType.IntTenThousandth || fn.ReturnType == MythValueType.Float);
+            }
+            if (parent is FunctionCallNode functionCallNode)
+            {
+                return functionCallNode.Arguments.Contains(ln);
             }
 
-            MythExprNode node = comparisonNode.Left == ln ? comparisonNode.Right! : comparisonNode.Left!;
-            return node is FunctionCallNode fn && fn.ReturnType == MythValueType.IntTenThousandth;
+            return false;
         }
     }
 }

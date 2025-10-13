@@ -14,19 +14,24 @@ namespace Myth
             {
                 case MythValueType.Int:
                 case MythValueType.IntTenThousandth:
+                case MythValueType.Float:
+                {
                     if (string.IsNullOrEmpty(parameters))
                     {
                         return $"ctx.{evalFunction}(\"{functionSignature.Name}\")";
                     }
 
                     return $"ctx.{evalFunction}(\"{functionSignature.Name}\", {parameters})";
+                }
                 case MythValueType.Bool:
+                {
                     if (string.IsNullOrEmpty(parameters))
                     {
                         return $"ctx.{evalFunction}(\"{functionSignature.Name}\")";
                     }
 
                     return $"ctx.{evalFunction}(\"{functionSignature.Name}\", {parameters})";
+                }
             }
 
             throw new NotImplementedException("GetEvalContextByFunctionSignature failed!");
