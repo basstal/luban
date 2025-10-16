@@ -11,6 +11,101 @@
             return AnalyzeNode(root, null)!;
         }
 
+        public static MythExprNode AnalyzeASTWithFunctionSignature(MythExprNode node, FunctionSignature signature)
+        {
+            return AnalyzeASTWithFunctionSignature(node, signature, new Dictionary<string, string>());
+        }
+
+        public static MythExprNode AnalyzeASTWithFunctionSignature(MythExprNode node, FunctionSignature signature, Dictionary<string, string> placeholders)
+        {
+            var result = ResolvePlaceholders(node, placeholders)!;
+            result = AnalyzeNode(result, null)!;
+            result = EnhanceWithFunctionSignature(result, signature);
+            return result;
+        }
+
+        private static MythExprNode? ResolvePlaceholders(MythExprNode? node, Dictionary<string, string> placeholders)
+        {
+            if (node == null || placeholders.Count == 0)
+            {
+                return node;
+            }
+
+            if (node is LiteralNode ln && ln.ValueType == MythValueType.Unknown)
+            {
+                if (placeholders.TryGetValue(ln.RawValue, out var originalValue))
+                {
+                    var placeholderNode = new PlaceHolderNode(ln.RawValue, originalValue);
+                    return placeholderNode;
+                }
+            }
+
+            switch (node)
+            {
+                case FunctionCallNode fn:
+                    for (int i = 0; i < fn.Arguments.Count; i++)
+                    {
+                        fn.Arguments[i] = ResolvePlaceholders(fn.Arguments[i], placeholders)!;
+                    }
+                    break;
+                case ComparisonNode cn:
+                    cn.Left = ResolvePlaceholders(cn.Left, placeholders);
+                    cn.Right = ResolvePlaceholders(cn.Right, placeholders);
+                    break;
+                case LogicalNode ln2:
+                    ln2.Left = ResolvePlaceholders(ln2.Left, placeholders);
+                    ln2.Right = ResolvePlaceholders(ln2.Right, placeholders);
+                    break;
+                case ArithmeticNode an:
+                    an.Left = ResolvePlaceholders(an.Left, placeholders);
+                    an.Right = ResolvePlaceholders(an.Right, placeholders);
+                    break;
+                case ListNode list:
+                    for (int i = 0; i < list.Elements.Count; i++)
+                    {
+                        list.Elements[i] = ResolvePlaceholders(list.Elements[i], placeholders)!;
+                    }
+                    break;
+            }
+
+            return node;
+        }
+
+        private static MythExprNode? EnhanceWithFunctionSignature(MythExprNode node, FunctionSignature signature)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+            switch (node)
+            {
+                case LiteralNode ln:
+                {
+                    if (ln.ValueType == MythValueType.Unknown && signature.Parameters.Any(parameterInfo => parameterInfo.VariableSignature == ln.RawValue))
+                    {
+                        ln.SetType(MythValueType.Variable);
+                    }
+                    break;
+                }
+                case ComparisonNode cn:
+                    cn.Left = EnhanceWithFunctionSignature(cn.Left, signature);
+                    cn.Right = EnhanceWithFunctionSignature(cn.Right, signature);
+                    break;
+
+                case LogicalNode ln2:
+                    ln2.Left = EnhanceWithFunctionSignature(ln2.Left, signature);
+                    ln2.Right = EnhanceWithFunctionSignature(ln2.Right, signature);
+                    break;
+                case ArithmeticNode an:
+                    an.Left = EnhanceWithFunctionSignature(an.Left, signature);
+                    an.Right = EnhanceWithFunctionSignature(an.Right, signature);
+                    break;
+                case PlaceHolderNode pn:
+                    break;
+            }
+            return node;
+        }
+
         private static MythExprNode? AnalyzeNode(MythExprNode? node, MythExprNode? parent)
         {
             if (node == null)
@@ -45,9 +140,9 @@
                         var isParams = signature.IsParams;
                         if (!isParams)
                         {
-                            if (fn.Arguments.Count != signature.ParamTypes.Count)
+                            if (fn.Arguments.Count != signature.Parameters.Count)
                             {
-                                throw new Exception($"函数[{fn.FuncName}]要求{signature.ParamTypes.Count}个参数, 但实参个数为{fn.Arguments.Count}");
+                                throw new Exception($"函数[{fn.FuncName}]要求{signature.Parameters.Count}个参数, 但实参个数为{fn.Arguments.Count}");
                             }
                         }
 
@@ -57,7 +152,7 @@
                             fn.Arguments[i] = AnalyzeNode(fn.Arguments[i], fn);
                             if (fn.Arguments[i] is LiteralNode ln)
                             {
-                                ln.SetType(isParams ? signature.ParamTypes[0] : signature.ParamTypes[i]);
+                                ln.SetType(isParams ? signature.Parameters[0].Type : signature.Parameters[i].Type);
                             }
                         }
                     }
@@ -76,6 +171,12 @@
                 case LogicalNode ln2:
                     ln2.Left = AnalyzeNode(ln2.Left, ln2);
                     ln2.Right = AnalyzeNode(ln2.Right, ln2);
+                    break;
+                case ArithmeticNode an:
+                    an.Left = AnalyzeNode(an.Left, an);
+                    an.Right = AnalyzeNode(an.Right, an);
+                    break;
+                case PlaceHolderNode pn:
                     break;
                 case ListNode list:
                 {
@@ -107,7 +208,7 @@
                 return false;
             }
 
-            if (functionSignature.ParamTypes.Count > 0)
+            if (functionSignature.Parameters.Count > 0)
             {
                 throw new Exception($"函数[{ln.RawValue}]需要参数，但是没有提供参数。请检查可能的错误写法。");
             }

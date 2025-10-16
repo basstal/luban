@@ -42,7 +42,7 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         MythGenerationEnabled = true;
         if (!File.Exists(mythFunctionDefineFilePath))
         {
-            s_logger.Error($"[ERROR] Myth function define file doesn't exist at {mythFunctionDefineFilePath}!");
+            s_logger.Warn($"[WARNING] Myth function define file doesn't exist at {mythFunctionDefineFilePath}!");
             MythGenerationEnabled = false;
             return;
         }
@@ -52,7 +52,8 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         //     return;
         // }
 
-        MythFunctionTable.LoadFromFile(mythFunctionDefineFilePath);
+        MythFunctionTable.ClearAndLoadSignaturesFromFile(mythFunctionDefineFilePath);
+        MythFunctionTable.ClearAndLoadFunctionAndBodyFromFile(MythManager.Ins.MythConfig.MythExpressionFilePath);
 
         _metadataBean = ctx.ExportBeans.Find(defBean => defBean.Namespace == "Myth" && defBean.Name == "MythMetadata")!;
         if (_metadataBean == null)
@@ -445,9 +446,8 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
 
                 // 2. 语法分析 -> AST
                 var parser = new MythParser(tokens);
-                MythExprNode ast = parser.ParseExpressionAndAnalyzeAST();
-
-
+                MythExprNode ast = parser.ParseExpression();
+                ast = MythSemanticAnalyzer.AnalyzeAST(ast);
 
                 string methodName = MythDataExport.CreateMythMethodName(mythTable, record, defFieldInTable);
                 if (metadataEnhance.defFieldRpnToken != null)

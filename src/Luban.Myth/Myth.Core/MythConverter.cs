@@ -23,11 +23,28 @@ public class MythConverter
         return "/*UNKNOWN*/";
     }
 
+    public static string ArithmeticOpToString(MythArithmeticOp op)
+    {
+        switch (op)
+        {
+            case MythArithmeticOp.Add:
+                return "+";
+            case MythArithmeticOp.Subtract:
+                return "-";
+            case MythArithmeticOp.Multiply:
+                return "*";
+            case MythArithmeticOp.Divide:
+                return "/";
+            default:
+                throw new NotSupportedException($"unknown arithmetic op:{op}");
+        }
+    }
+
 
     public static string GetEvalFunctionByFunctionSignature(FunctionSignature functionSignature)
     {
         var returnType = functionSignature.ReturnType;
-        var haveParams = functionSignature.ParamTypes.Count > 0;
+        var haveParams = functionSignature.Parameters.Count > 0;
         switch (returnType)
         {
             case MythValueType.Int:

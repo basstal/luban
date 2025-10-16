@@ -146,6 +146,22 @@ public class MythLexer
                     tokens.Add(new MythToken(MythTokenType.Semicolon, ";"));
                     Advance();
                     break;
+                case '+':
+                    tokens.Add(new MythToken(MythTokenType.Plus, "+"));
+                    Advance();
+                    break;
+                case '-':
+                    tokens.Add(new MythToken(MythTokenType.Minus, "-"));
+                    Advance();
+                    break;
+                case '*':
+                    tokens.Add(new MythToken(MythTokenType.Asterisk, "*"));
+                    Advance();
+                    break;
+                case '/':
+                    tokens.Add(new MythToken(MythTokenType.Slash, "/"));
+                    Advance();
+                    break;
                 default:
                     // 简化：遇到无法识别的字符，就跳过
                     Advance();
@@ -215,7 +231,9 @@ public class MythLexer
         string text = _input.Substring(start, _pos - start);
         // 跳过结束引号
         if (!IsEnd())
+        {
             Advance();
+        }
 
         return new MythToken(MythTokenType.StringLiteral, text);
     }

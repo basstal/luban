@@ -112,7 +112,7 @@ namespace Myth
                     meta.Function = fn.FuncName;
                     meta.IsParams = fn.FunctionSignature.IsParams;
                     meta.FunctionReturnType = fn.ReturnType;
-                    meta.FunctionParameterTypes = fn.FunctionSignature.ParamTypes;
+                    meta.FunctionParameterTypes = fn.FunctionSignature.Parameters.Select(parameter => parameter.Type).ToList();
                     meta.EvaluateType = MythConverter.GetEvalFunctionByFunctionSignature(fn.FunctionSignature);
                     for (int i = 0; i < fn.Arguments.Count; i++)
                     {
@@ -127,19 +127,20 @@ namespace Myth
                             }
                             else if (ln2.ValueType == MythValueType.Enum)
                             {
-                                if (fn.FunctionSignature.ParamActualTypeDict.TryGetValue(i, out var actualTypeStr))
+                                var paramterInfo = i < fn.FunctionSignature.Parameters.Count ? fn.FunctionSignature.Parameters[i] : null;
+                                if (paramterInfo != null && !string.IsNullOrEmpty(paramterInfo.LubanTypeReference))
                                 {
                                     // 从 luban 的 enum 定义中反射获取 actualTypeStr 对应的 DefEnum，并使用 DefEnum 反射中文的 RawValue 到对应的 Enum 内容。
-                                    var enumDef = exportEnums.Find(defEnum => defEnum.FullName == actualTypeStr);
+                                    var enumDef = exportEnums.Find(defEnum => defEnum.FullName == paramterInfo.LubanTypeReference);
                                     if (enumDef == null)
                                     {
-                                        throw new NotImplementedException($"Enum {actualTypeStr} not found in export enums");
+                                        throw new NotImplementedException($"Enum {paramterInfo.LubanTypeReference} not found in export enums");
                                     }
 
                                     var enumItem = enumDef.Items.Find(item => item.Name == ln2.RawValue || item.Alias == ln2.RawValue);
                                     if (enumItem == null)
                                     {
-                                        throw new NotImplementedException($"Enum item {ln2.RawValue} not found in enum {actualTypeStr}\n可选的枚举值有：[{string.Join(", ", enumDef.Items.Select(item => item.Name))}]");
+                                        throw new NotImplementedException($"Enum item {ln2.RawValue} not found in enum {paramterInfo.LubanTypeReference}\n可选的枚举值有：[{string.Join(", ", enumDef.Items.Select(item => item.Name))}]");
                                     }
 
                                     meta.FunctionParameters.Add(enumItem.IntValue.ToString());

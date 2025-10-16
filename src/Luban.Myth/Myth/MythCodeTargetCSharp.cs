@@ -7,9 +7,10 @@ using Luban.Utils;
 using Myth;
 using Neo.IronLua;
 using Scriban.Runtime;
+using Scriban.Syntax;
 
 [CodeTarget("myth_csharp")]
-public class MythCodeTargetCSharp : CsharpCodeTargetBase, IMythCodeTarget
+public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTemplateTarget
 {
     public OutputFile GenerateMyth(GenerationContext ctx, Dictionary<string, (string, string)> result, DefBean bean, string interfaceName)
     {
@@ -90,5 +91,116 @@ public class MythCodeTargetCSharp : CsharpCodeTargetBase, IMythCodeTarget
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));
         return new OutputFile() { File = $"{interfaceName}.Myth.{MythManager.Ins.MythConfig.GetOutputSuffixByCodeTarget()}", Content = writer.ToResult(FileHeader) };
+    }
+
+    public class OutputFunction
+    {
+        public string Name { get; set; }
+        public string ReturnType { get; set; }
+        public string Parameters { get; set; }
+        public List<string> BodyLines { get; set; }
+
+        public static string MythValueTypeToString(MythValueType inValueType)
+        {
+            switch (inValueType)
+            {
+                case MythValueType.Int:
+                case MythValueType.IntTenThousandth:
+                case MythValueType.Float:
+                    return "int";
+                case MythValueType.Bool:
+                    return "bool";
+                case MythValueType.String:
+                    return "string";
+                case MythValueType.Enum:
+                    return "int";
+                default:
+                    return "unknown";
+            }
+        }
+    }
+
+    private bool HandlePlaceHolderNode(List<MythExprNode> nodes, GenerationContext ctx)
+    {
+        foreach (var node in nodes)
+        {
+            if (node is PlaceHolderNode placeHolderNode)
+            {
+                var splitContent = placeHolderNode.OriginalValue.Split(".");
+                var defineTable = ctx.ExportTables.Find(table => table.ValueType == splitContent[0]);
+                var defineField = defineTable.ValueTType.DefBean.ExportFields.Find(field => field.Name == splitContent[1]);
+                placeHolderNode.OutputValue = $"inTables.{defineTable.Name}.{TypeUtil.ToCsStyleName(defineField.Name)}";
+                return true;
+            }
+            else if (node is ArithmeticNode arithmeticNode)
+            {
+                if (HandlePlaceHolderNode(new List<MythExprNode> { arithmeticNode.Left, arithmeticNode.Right }, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is ComparisonNode comparisonNode)
+            {
+                if (HandlePlaceHolderNode(new List<MythExprNode> { comparisonNode.Left, comparisonNode.Right }, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is LogicalNode logicalNode)
+            {
+                if (HandlePlaceHolderNode(new List<MythExprNode> { logicalNode.Left, logicalNode.Right }, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is FunctionCallNode functionCallNode)
+            {
+                if (HandlePlaceHolderNode(functionCallNode.Arguments, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is ListNode listNode)
+            {
+                if (HandlePlaceHolderNode(listNode.Elements, ctx))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    public OutputFile GenerateMythExpression(GenerationContext ctx, IMythCodeGenerator mythCodeGenerator)
+    {
+        var writer = new CodeWriter();
+        var template = GetTemplate($"MythExpression");
+        var tplCtx = CreateTemplateContext(template);
+        var functions = MythFunctionTable.FunctionBodies.Values.Select(functionBody =>
+        {
+            var outputFunction = new OutputFunction()
+            {
+                Name = functionBody.Signature.Name,
+                ReturnType = OutputFunction.MythValueTypeToString(functionBody.Signature.ReturnType),
+                Parameters = string.Join(", ", functionBody.Signature.Parameters.Select(p => OutputFunction.MythValueTypeToString(p.Type) + " " + p.VariableSignature).ToList()),
+            };
+            if (HandlePlaceHolderNode(functionBody.ParsedBodyLines, ctx))
+            {
+                outputFunction.Parameters = "cfg.Tables inTables, " + outputFunction.Parameters;
+            }
+            outputFunction.BodyLines = functionBody.ParsedBodyLines.Select(node => mythCodeGenerator.GenerateExpressionCode(node)).ToList();
+            if (functionBody.ParsedBodyLines.Count == 1)
+            {
+                outputFunction.BodyLines[0] = "return " + outputFunction.BodyLines[0];
+            }
+            return outputFunction;
+        }).ToList();
+        var extraEnvs = new ScriptObject
+        {
+            { "__ctx", ctx },
+            {"__functions", functions},
+        };
+        tplCtx.PushGlobal(extraEnvs);
+        writer.Write(template.Render(tplCtx));
+        return new OutputFile() { File = $"MythFunctions.Myth.{MythManager.Ins.MythConfig.GetOutputSuffixByCodeTarget()}", Content = writer.ToResult(FileHeader) };
     }
 }

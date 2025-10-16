@@ -3,6 +3,7 @@ public class MythConfig
     public string FileLocation { get; set; }
     public string CodeTarget { get; set; }
     public string MythFunctionDefineFilePath { get; set; }
+    public string MythExpressionFilePath { get; set; }
     public string OutputMythDir { get; set; }
     public string ImportPrefix { get; set; }
     public bool IgnoreMythCodeOutput { get; set; }
@@ -39,6 +40,11 @@ public class MythConfig
             MythFunctionDefineFilePath = Path.Combine(mythConfigDir, MythFunctionDefineFilePath);
         }
 
+        if (!string.IsNullOrEmpty(MythExpressionFilePath) && !Path.IsPathRooted(MythExpressionFilePath))
+        {
+            MythExpressionFilePath = Path.Combine(mythConfigDir, MythExpressionFilePath);
+        }
+
         if (!string.IsNullOrEmpty(OutputMythDir) && !Path.IsPathRooted(OutputMythDir))
         {
             OutputMythDir = Path.Combine(mythConfigDir, OutputMythDir);
@@ -47,6 +53,6 @@ public class MythConfig
 
     public override string ToString()
     {
-        return $"fileLocation: {FileLocation}, codeTarget: {CodeTarget}, mythFunctionDefineFilePath: {MythFunctionDefineFilePath}, outputMythDir: {OutputMythDir}";
+        return $"fileLocation: {FileLocation}, codeTarget: {CodeTarget}, mythFunctionDefineFilePath: {MythFunctionDefineFilePath}, MythExpressionFilePath: {MythExpressionFilePath}, outputMythDir: {OutputMythDir}";
     }
 }

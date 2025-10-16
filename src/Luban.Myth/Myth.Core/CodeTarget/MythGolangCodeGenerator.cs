@@ -37,7 +37,7 @@ namespace Myth
         /// 根据AST，生成可执行golang表达式代码
         /// 假设我们用 ctx 作为 IConditionContext 的变量名
         /// </summary>
-        public string GenerateExpressionCode(MythExprNode node, MythExprNode parent, int nodeIndexFromParent = -1)
+        public string GenerateExpressionCode(MythExprNode node, MythExprNode parent = null, int nodeIndexFromParent = -1)
         {
             if (node is LiteralNode ln)
             {
@@ -69,19 +69,20 @@ namespace Myth
                     {
                         var functionCallNode = (FunctionCallNode)parent;
                         var functionSignature = functionCallNode.FunctionSignature;
-                        if (functionSignature.ParamActualTypeDict.TryGetValue(nodeIndexFromParent, out var actualTypeStr))
+                        var paramterInfo = nodeIndexFromParent != -1 && nodeIndexFromParent < functionSignature.Parameters.Count ? functionSignature.Parameters[nodeIndexFromParent] : null;
+                        if (paramterInfo != null && !string.IsNullOrEmpty(paramterInfo.LubanTypeReference))
                         {
                             // 从 luban 的 enum 定义中反射获取 actualTypeStr 对应的 DefEnum，并使用 DefEnum 反射中文的 RawValue 到对应的 Enum 内容。
-                            var enumDef = m_exportEnums.Find(defEnum => defEnum.FullName == actualTypeStr);
+                            var enumDef = m_exportEnums.Find(defEnum => defEnum.FullName == paramterInfo.LubanTypeReference);
                             if (enumDef == null)
                             {
-                                throw new NotImplementedException($"Enum {actualTypeStr} not found in export enums");
+                                throw new NotImplementedException($"Enum {paramterInfo.LubanTypeReference} not found in export enums");
                             }
 
                             var enumItem = enumDef.Items.Find(item => item.Name == ln.RawValue || item.Alias == ln.RawValue);
                             if (enumItem == null)
                             {
-                                throw new NotImplementedException($"Enum item {ln.RawValue} not found in enum {actualTypeStr}");
+                                throw new NotImplementedException($"Enum item {ln.RawValue} not found in enum {paramterInfo.LubanTypeReference}");
                             }
 
 
@@ -89,6 +90,10 @@ namespace Myth
                         }
 
                         return $"\"{ln.RawValue}\"";
+                    }
+                    case MythValueType.Variable:
+                    {
+                        return ln.RawValue;
                     }
                     default:
                         throw new NotImplementedException($"Unknown ValueType or {ln.ValueType} is not supported yet");
@@ -125,6 +130,17 @@ namespace Myth
                 string op = ln2.Operator == MythLogicalOp.And ? "&&" : "||";
                 return $"({left} {op} {right})";
             }
+            else if (node is ArithmeticNode an)
+            {
+                var left = GenerateExpressionCode(an.Left, an);
+                var right = GenerateExpressionCode(an.Right, an);
+                string op = MythConverter.ArithmeticOpToString(an.Op);
+                return $"({left} {op} {right})";
+            }
+            else if (node is PlaceHolderNode pn)
+            {
+                return string.IsNullOrEmpty(pn.OutputValue) ? pn.Name : pn.OutputValue;
+            }
 
             return "/*UNKNOWN*/";
         }
@@ -144,7 +160,7 @@ namespace Myth
         public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node, List<DefEnum> exportEnums)
         {
             m_exportEnums = exportEnums;
-            var exprCode = GenerateExpressionCode(node, null);
+            var exprCode = GenerateExpressionCode(node);
             return $@"
 func {methodName}(ctx {GolangTopModuleName}.{interfaceName}) bool {{
     return {exprCode};

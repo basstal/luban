@@ -130,17 +130,17 @@ public class MythDataExport : DataExporterBase
         var outputManifest = new OutputFileManifest("myth", OutputType.Code);
         // var safeReferenceMethodSignatures = ReadSafeReferenceMethodsFromFile();
         string interfaceName = "IMythConditionContext";
-        IMythCodeTarget mythCodeGenerator;
+        IMythCodeTemplateTarget mythCodeTemplateTarget;
         switch (MythManager.Ins.MythConfig.CodeTarget)
         {
             case "csharp":
             {
-                mythCodeGenerator = new MythCodeTargetCSharp();
+                mythCodeTemplateTarget = new MythCodeTemplateTargetCSharp();
                 break;
             }
             case "golang":
             {
-                mythCodeGenerator = new MythCodeTargetGolang();
+                mythCodeTemplateTarget = new MythCodeTemplateTargetGolang();
                 break;
             }
             default:
@@ -148,6 +148,7 @@ public class MythDataExport : DataExporterBase
                 throw new NotImplementedException($"暂不支持的代码目标 {MythManager.Ins.MythConfig.CodeTarget}");
             }
         }
+        IMythCodeGenerator mythCodeGenerator = null;
 
         // 每一张需要生成 Myth 代码的表
         foreach (var (mythTable, mythFieldIndices) in exportMythTables)
@@ -205,20 +206,20 @@ public class MythDataExport : DataExporterBase
 
                         // 2. 语法分析 -> AST
                         var parser = new MythParser(tokens);
-                        MythExprNode ast = parser.ParseExpressionAndAnalyzeAST();
-
+                        MythExprNode ast = parser.ParseExpression();
+                        ast = MythSemanticAnalyzer.AnalyzeAST(ast);
                         // 3. 生成 C# 代码
                         string methodName = CreateMythMethodName(mythTable, record, defField);
                         string code;
                         switch (MythManager.Ins.MythConfig.CodeTarget)
                         {
                             case "csharp":
-                                var mythCSharpCodeGenerator = new MythCSharpCodeGenerator();
-                                code = mythCSharpCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
+                                mythCodeGenerator = new MythCSharpCodeGenerator();
+                                code = mythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
                                 break;
                             case "golang":
-                                var mythGoCodeGenerator = new MythGolangCodeGenerator();
-                                code = mythGoCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
+                                mythCodeGenerator = new MythGolangCodeGenerator();
+                                code = mythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
                                 break;
                             default:
                                 throw new NotImplementedException($"暂不支持的代码目标 {MythManager.Ins.MythConfig.CodeTarget}");
@@ -274,13 +275,16 @@ public class MythDataExport : DataExporterBase
 
             // getterInfos = getterInfos.ToList();
             // var result = roslynExpressionProcessor.ProcessExpressions(expressions, safeReferenceMethodSignatures);
-            var outputFile = mythCodeGenerator.GenerateMyth(ctx, result, mythTable.ValueTType.DefBean, interfaceName);
+            var outputFile = mythCodeTemplateTarget.GenerateMyth(ctx, result, mythTable.ValueTType.DefBean, interfaceName);
             // Console.WriteLine($"outputFile :{outputFile.Content}");
             outputManifest.AddFile(outputFile);
         }
 
-        var interfaceFile = mythCodeGenerator.GenerateMythInterface(ctx, interfaceName);
+        var interfaceFile = mythCodeTemplateTarget.GenerateMythInterface(ctx, interfaceName);
         outputManifest.AddFile(interfaceFile);
+
+        var mythFunctionsFile = mythCodeTemplateTarget.GenerateMythExpression(ctx, mythCodeGenerator);
+        outputManifest.AddFile(mythFunctionsFile);
 
         if (!MythManager.Ins.MythConfig.IgnoreMythCodeOutput)
         {
