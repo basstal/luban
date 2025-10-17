@@ -4,8 +4,8 @@ namespace Myth
 {
     public class MythGolangCodeGenerator : IMythCodeGenerator
     {
+        public string GolangTopModuleName { get; set; }
         private List<DefEnum> m_exportEnums;
-        public const string GolangTopModuleName = "myth";
         public string GetEvalContextByFunctionSignature(FunctionSignature functionSignature, string[] argCodes)
         {
             var returnType = functionSignature.ReturnType;

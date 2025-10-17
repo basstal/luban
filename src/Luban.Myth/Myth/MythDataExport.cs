@@ -127,7 +127,7 @@ public class MythDataExport : DataExporterBase
             }
         }
 
-        var outputManifest = new OutputFileManifest("myth", OutputType.Code);
+        var outputManifest = new OutputFileManifest("MythCode", OutputType.Code);
         // var safeReferenceMethodSignatures = ReadSafeReferenceMethodsFromFile();
         string interfaceName = "IMythConditionContext";
         IMythCodeTemplateTarget mythCodeTemplateTarget;
@@ -283,14 +283,23 @@ public class MythDataExport : DataExporterBase
         var interfaceFile = mythCodeTemplateTarget.GenerateMythInterface(ctx, interfaceName);
         outputManifest.AddFile(interfaceFile);
 
-        var mythFunctionsFile = mythCodeTemplateTarget.GenerateMythExpression(ctx, mythCodeGenerator);
-        outputManifest.AddFile(mythFunctionsFile);
 
         if (!MythManager.Ins.MythConfig.IgnoreMythCodeOutput)
         {
-            string outputSaverName = EnvManager.Current.GetOptionOrDefault(outputManifest.TargetName, BuiltinOptionNames.OutputSaver, true, "myth");
+            string outputSaverName = EnvManager.Current.GetOptionOrDefault(outputManifest.TargetName, BuiltinOptionNames.OutputSaver, true, "MythCode");
             var saver = OutputSaverManager.Ins.GetOutputSaver(outputSaverName);
             saver.Save(outputManifest);
+        }
+
+        var outputManifestExpression = new OutputFileManifest("MythExpression", OutputType.Code);
+
+        var mythFunctionsFile = mythCodeTemplateTarget.GenerateMythExpression(ctx, mythCodeGenerator);
+        outputManifestExpression.AddFile(mythFunctionsFile);
+        if (!MythManager.Ins.MythConfig.IgnoreMythExpressionOutput)
+        {
+            string outputSaverName = EnvManager.Current.GetOptionOrDefault(outputManifestExpression.TargetName, BuiltinOptionNames.OutputSaver, true, "MythExpression");
+            var saver = OutputSaverManager.Ins.GetOutputSaver(outputSaverName);
+            saver.Save(outputManifestExpression);
         }
     }
 

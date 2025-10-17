@@ -39,15 +39,8 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             { "__method_values", result.Values },
             { "__interface_name", interfaceName },
             { "__golang_myth_package", folderName },
-            { "__golang_top_myth_package", MythGolangCodeGenerator.GolangTopModuleName },
-            { "__import_prefix", MythManager.Ins.MythConfig.ImportPrefix },
-            // { "__methods", result.methods },
-            // { "__constDefinitions", result.constDefinitions },
-            // { "__valueCallMappings", result.valueCallMappings },
-            // { "__delegateTypesMapping", result.delegateTypesMapping },
-            // { "__constValues", result.constValues },
-            // { "__constValueGetters", result.constValueGetters },
-            // { "__getterInfos", getterInfos }
+            { "__golang_top_myth_package", Path.GetFileName(MythManager.Ins.MythConfig.OutputMythCodeDir) },
+            { "__import_prefix", string.Join("\n", MythManager.Ins.MythConfig.ImportPrefixList.Select(prefix => $"\"{prefix}\"")) },
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));
@@ -63,7 +56,7 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
         {
             { "__ctx", ctx },
             { "__interface_name", interfaceName },
-            { "__golang_top_myth_package", MythGolangCodeGenerator.GolangTopModuleName },
+            { "__golang_top_myth_package", Path.GetFileName(MythManager.Ins.MythConfig.OutputMythCodeDir) },
             // { "__top_module", ctx.Target.TopModule },
             // { "__manager_name", ctx.Target.Manager },
             // { "__manager_name_with_top_module", TypeUtil.MakeFullName(ctx.TopModule, ctx.Target.Manager) },
@@ -124,28 +117,10 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             if (node is PlaceHolderNode placeHolderNode)
             {
                 var splitContent = placeHolderNode.OriginalValue.Split('.');
-                if (splitContent.Length != 2)
-                {
-                    // For now, we only support simple table.field access.
-                    continue;
-                }
-                var tableName = splitContent[0];
-                var fieldName = splitContent[1];
-
-                var defineTable = ctx.ExportTables.Find(table => table.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase));
-                if (defineTable == null)
-                {
-                    continue;
-                }
-
-                var defineField = defineTable.ValueTType.DefBean.ExportFields.Find(field => field.Name.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
-                if (defineField == null)
-                {
-                    continue;
-                }
-
+                var defineTable = ctx.ExportTables.Find(table => table.ValueType == splitContent[0]);
+                var defineField = defineTable.ValueTType.DefBean.ExportFields.Find(field => field.Name == splitContent[1]);
                 // Assuming Go `Tables` struct has PascalCase fields for each table.
-                placeHolderNode.OutputValue = $"inTables.{TypeUtil.ToPascalCase(defineTable.Name)}.{TypeUtil.ToPascalCase(defineField.Name)}";
+                placeHolderNode.OutputValue = $"inExcels.Tables().{TypeUtil.ToPascalCase(defineTable.Name)}.Get().{TypeUtil.ToPascalCase(defineField.Name)}";
                 return true;
             }
             else if (node is ArithmeticNode arithmeticNode)
@@ -206,7 +181,7 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             if (HandlePlaceHolderNode_Go(functionBody.ParsedBodyLines, ctx))
             {
                 needImportTables = true;
-                var tableParam = $"inTables *{MythGolangCodeGenerator.GolangTopModuleName}.Tables";
+                var tableParam = $"inExcels *excels.Excels";
                 outputFunction.Parameters = string.IsNullOrEmpty(outputFunction.Parameters) ? tableParam : tableParam + ", " + outputFunction.Parameters;
             }
 
@@ -223,8 +198,8 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             { "__ctx", ctx },
             { "__functions", functions },
             { "__need_import_tables", needImportTables },
-            { "__golang_top_myth_package", MythGolangCodeGenerator.GolangTopModuleName },
-            { "__import_prefix", MythManager.Ins.MythConfig.ImportPrefix },
+            { "__golang_top_myth_package", Path.GetFileName(MythManager.Ins.MythConfig.OutputMythExpressionDir) },
+            { "__import_prefix", string.Join("\n", MythManager.Ins.MythConfig.ImportPrefixList.Select(prefix => $"\"{prefix}\"")) },
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));

@@ -3,7 +3,7 @@
 package {{__golang_myth_package}}
 
 import (
-    "{{__import_prefix}}{{__golang_top_myth_package}}"
+{{__import_prefix}}
 )
 
 ////////////////////////////////////////

@@ -5,7 +5,7 @@
             // Use IntelliSense to find out which attributes exist for C# debugging
             // Use hover for the description of the existing attributes
             // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
-            "name": ".NET Core Launch (console)",
+            "name": "[Client].NET Core Launch (console)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -29,6 +29,37 @@
                 "dataExporter=myth",
                 "mythConfig=D:\\svn_repo\\trunk\\Externals\\luban\\temp\\ClientMythConfig.json",
                 "pathValidator.rootDir=D:\\svn_repo\\trunk\\Client\\Assets\\FD2\\AssetBundle"
+            ],
+            "cwd": "${workspaceFolder}/src/Luban",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            // Use IntelliSense to find out which attributes exist for C# debugging
+            // Use hover for the description of the existing attributes
+            // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
+            "name": "[Server] .NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/src/Luban/bin/Debug/net8.0/Luban.dll",
+            "args": [
+                "-t",
+                "all",
+                "-c",
+                "go-json",
+                "-d",
+                "json",
+                "--config",
+                "D:\\svn_repo\\trunk\\Externals\\luban/luban.conf",
+                "-x",
+                "outputDataDir=D:/svn_repo/trunk/Client/Externals/luban/temp/ServerOutput/Json",
+                "outputCodeDir=D:/svn_repo/trunk/Client/Externals/luban/temp/ServerOutput/Code",
+                "dataExporter=myth",
+                "mythConfig=D:/svn_repo/trunk/Client/Externals/luban/temp/ServerMythConfig.json",
+                "lubanGoModule=\"excel/cfg\""
             ],
             "cwd": "${workspaceFolder}/src/Luban",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

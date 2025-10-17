@@ -37,9 +37,6 @@ public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTempl
             { "__methods", result.Keys },
             { "__method_values", result.Values },
             { "__interface_name", interfaceName },
-            { "__golang_myth_package", Path.GetDirectoryName(typeNameToFileSaverPath).lower()},
-            { "__golang_top_myth_package", MythGolangCodeGenerator.GolangTopModuleName },
-            { "__import_prefix", MythManager.Ins.MythConfig.ImportPrefix },
             // { "__methods", result.methods },
             // { "__constDefinitions", result.constDefinitions },
             // { "__valueCallMappings", result.valueCallMappings },
@@ -66,7 +63,6 @@ public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTempl
         {
             { "__ctx", ctx },
             { "__interface_name", interfaceName },
-            { "__golang_top_myth_package", MythGolangCodeGenerator.GolangTopModuleName },
             // { "__top_module", ctx.Target.TopModule },
             // { "__manager_name", ctx.Target.Manager },
             // { "__manager_name_with_top_module", TypeUtil.MakeFullName(ctx.TopModule, ctx.Target.Manager) },
