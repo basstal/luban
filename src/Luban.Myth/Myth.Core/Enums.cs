@@ -3,6 +3,7 @@
 public enum MythValueType
 {
     Unknown,
+    Void,
     Bool,
     Int,
     IntTenThousandth,
@@ -69,5 +70,7 @@ public enum MythTokenType
     Plus = 19,
     Minus = 20,
     Asterisk = 21,
-    Slash = 22
+    Slash = 22,
+    Assign = 23,
+    KeywordReturn = 24,
 }

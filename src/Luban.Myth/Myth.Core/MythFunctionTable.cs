@@ -94,6 +94,7 @@
 
                     if (bodyFound)
                     {
+                        var variableDeclarations = new HashSet<string>();
                         var functionBody = new FunctionBody(signature);
                         foreach (var lineContent in bodyLines)
                         {
@@ -106,8 +107,8 @@
                             var lexer = new MythLexer(preprocessedLine);
                             var tokens = lexer.Tokenize();
                             var parser = new MythParser(tokens);
-                            var expression = parser.ParseExpression();
-                            expression = MythSemanticAnalyzer.AnalyzeASTWithFunctionSignature(expression, functionBody.Signature, placeholders);
+                            var expression = parser.ParseStatement();
+                            expression = MythSemanticAnalyzer.AnalyzeASTWithFunctionSignature(expression, functionBody.Signature, placeholders, variableDeclarations);
                             functionBody.ParsedBodyLines.Add(expression);
                         }
 
@@ -194,7 +195,7 @@
             }
 
             string returnTypeStr = trimmed.Substring(0, firstSpaceIndex).Trim();
-            MythValueType returnType = ParseType(returnTypeStr);
+            MythValueType returnType = MythTypeUtil.ParseType(returnTypeStr);
 
             // 2) Remaining part (including function name and parentheses)
             string rest = trimmed.Substring(firstSpaceIndex).Trim();
@@ -262,29 +263,7 @@
             return signature;
         }
 
-        /// <summary>
-        /// 将字符串 "int","bool","string" 转成 MythValueType，否则 Unknown
-        /// </summary>
-        private static MythValueType ParseType(string typeStr)
-        {
-            switch (typeStr)
-            {
-                case "整数":
-                    return MythValueType.Int;
-                case "万分比整数":
-                    return MythValueType.IntTenThousandth;
-                case "布尔":
-                    return MythValueType.Bool;
-                case "字符串":
-                    return MythValueType.String;
-                case "枚举":
-                    return MythValueType.Enum;
-                case "浮点数":
-                    return MythValueType.Float;
-                default:
-                    return MythValueType.Unknown;
-            }
-        }
+
 
         private static ParameterInfo ParseParemterInfo(string inChunk, out bool isParams, bool disableMultiParams = false)
         {
@@ -312,7 +291,7 @@
                 isParams = true;
                 // 取出定义类型中 "多个" 后面的字符串
                 var afterParams = definitionTypeStr.Substring("多个".Length).Trim();
-                MythValueType t = ParseType(afterParams);
+                MythValueType t = MythTypeUtil.ParseType(afterParams);
                 return new ParameterInfo(t, actualTypeStr, variableSignatureStr);
 
                 // // 保存实际类型
@@ -324,7 +303,7 @@
             else
             {
                 // 普通单参数
-                MythValueType t = ParseType(definitionTypeStr);
+                MythValueType t = MythTypeUtil.ParseType(definitionTypeStr);
                 return new ParameterInfo(t, actualTypeStr, variableSignatureStr);
 
                 // // 保存实际类型

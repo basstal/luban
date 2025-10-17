@@ -63,7 +63,7 @@ public class MythLexer
                     }
                     else
                     {
-                        // 简化，假设单独 '=' 不在本示例中出现
+                        tokens.Add(new MythToken(MythTokenType.Assign, "="));
                         Advance();
                     }
 
@@ -184,6 +184,11 @@ public class MythLexer
 
         string text = _input.Substring(start, _pos - start);
 
+        if (text == "return")
+        {
+            return new MythToken(MythTokenType.KeywordReturn, text);
+        }
+        
         // 如果是 "true" 或 "false"
         if (text == "true" || text == "false")
         {

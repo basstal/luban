@@ -8,19 +8,19 @@
         /// </summary>
         public static MythExprNode AnalyzeAST(MythExprNode root)
         {
-            return AnalyzeNode(root, null)!;
+            return AnalyzeNode(root, null, new HashSet<string>())!;
         }
 
-        public static MythExprNode AnalyzeASTWithFunctionSignature(MythExprNode node, FunctionSignature signature)
-        {
-            return AnalyzeASTWithFunctionSignature(node, signature, new Dictionary<string, string>());
-        }
+        // public static MythExprNode AnalyzeASTWithFunctionSignature(MythExprNode node, FunctionSignature signature)
+        // {
+        //     return AnalyzeASTWithFunctionSignature(node, signature, new Dictionary<string, string>());
+        // }
 
-        public static MythExprNode AnalyzeASTWithFunctionSignature(MythExprNode node, FunctionSignature signature, Dictionary<string, string> placeholders)
+        public static MythExprNode AnalyzeASTWithFunctionSignature(MythExprNode node, FunctionSignature signature, Dictionary<string, string> placeholders, HashSet<string> variableDeclarations)
         {
             var result = ResolvePlaceholders(node, placeholders)!;
-            result = AnalyzeNode(result, null)!;
-            result = EnhanceWithFunctionSignature(result, signature);
+            result = AnalyzeNode(result, null, variableDeclarations)!;
+            result = LocateVariables(result, signature, variableDeclarations);
             return result;
         }
 
@@ -66,12 +66,22 @@
                         list.Elements[i] = ResolvePlaceholders(list.Elements[i], placeholders)!;
                     }
                     break;
+                case AssignmentNode an:
+                    an.Target = ResolvePlaceholders(an.Target, placeholders);
+                    an.Value = ResolvePlaceholders(an.Value, placeholders);
+                    break;
+                case ReturnNode rn:
+                    rn.Value = ResolvePlaceholders(rn.Value, placeholders);
+                    break;
+                case CastExpressionNode cen:
+                    cen.Expression = ResolvePlaceholders(cen.Expression, placeholders);
+                    break;
             }
 
             return node;
         }
 
-        private static MythExprNode? EnhanceWithFunctionSignature(MythExprNode node, FunctionSignature signature)
+        private static MythExprNode? LocateVariables(MythExprNode node, FunctionSignature signature, HashSet<string> variableDeclarations)
         {
             if (node == null)
             {
@@ -81,32 +91,50 @@
             {
                 case LiteralNode ln:
                 {
-                    if (ln.ValueType == MythValueType.Unknown && signature.Parameters.Any(parameterInfo => parameterInfo.VariableSignature == ln.RawValue))
+                    if (ln.ValueType == MythValueType.Unknown)
                     {
-                        ln.SetType(MythValueType.Variable);
+                        if (signature.Parameters.Any(parameterInfo => parameterInfo.VariableSignature == ln.RawValue))
+                        {
+                            ln.SetType(MythValueType.Variable);
+                        }
+                        else if (variableDeclarations.Contains(ln.RawValue))
+                        {
+                            ln.SetType(MythValueType.Variable);
+                        }
                     }
                     break;
                 }
                 case ComparisonNode cn:
-                    cn.Left = EnhanceWithFunctionSignature(cn.Left, signature);
-                    cn.Right = EnhanceWithFunctionSignature(cn.Right, signature);
+                    cn.Left = LocateVariables(cn.Left, signature, variableDeclarations);
+                    cn.Right = LocateVariables(cn.Right, signature, variableDeclarations);
                     break;
 
                 case LogicalNode ln2:
-                    ln2.Left = EnhanceWithFunctionSignature(ln2.Left, signature);
-                    ln2.Right = EnhanceWithFunctionSignature(ln2.Right, signature);
+                    ln2.Left = LocateVariables(ln2.Left, signature, variableDeclarations);
+                    ln2.Right = LocateVariables(ln2.Right, signature, variableDeclarations);
                     break;
                 case ArithmeticNode an:
-                    an.Left = EnhanceWithFunctionSignature(an.Left, signature);
-                    an.Right = EnhanceWithFunctionSignature(an.Right, signature);
+                    an.Left = LocateVariables(an.Left, signature, variableDeclarations);
+                    an.Right = LocateVariables(an.Right, signature, variableDeclarations);
                     break;
                 case PlaceHolderNode pn:
+                case DeclarationExpressionNode den:
+                    break;
+                case AssignmentNode assignmentNode:
+                    assignmentNode.Target = LocateVariables(assignmentNode.Target, signature, variableDeclarations);
+                    assignmentNode.Value = LocateVariables(assignmentNode.Value, signature, variableDeclarations);
+                    break;
+                case ReturnNode rn:
+                    rn.Value = LocateVariables(rn.Value, signature, variableDeclarations);
+                    break;
+                case CastExpressionNode cen:
+                    cen.Expression = LocateVariables(cen.Expression, signature, variableDeclarations);
                     break;
             }
             return node;
         }
 
-        private static MythExprNode? AnalyzeNode(MythExprNode? node, MythExprNode? parent)
+        private static MythExprNode? AnalyzeNode(MythExprNode? node, MythExprNode? parent, HashSet<string> variableDeclarations)
         {
             if (node == null)
             {
@@ -149,7 +177,7 @@
 
                         for (int i = 0; i < fn.Arguments.Count; i++)
                         {
-                            fn.Arguments[i] = AnalyzeNode(fn.Arguments[i], fn);
+                            fn.Arguments[i] = AnalyzeNode(fn.Arguments[i], fn, variableDeclarations);
                             if (fn.Arguments[i] is LiteralNode ln)
                             {
                                 ln.SetType(isParams ? signature.Parameters[0].Type : signature.Parameters[i].Type);
@@ -164,19 +192,32 @@
                     break;
 
                 case ComparisonNode cn:
-                    cn.Left = AnalyzeNode(cn.Left, cn);
-                    cn.Right = AnalyzeNode(cn.Right, cn);
+                    cn.Left = AnalyzeNode(cn.Left, cn, variableDeclarations);
+                    cn.Right = AnalyzeNode(cn.Right, cn, variableDeclarations);
                     break;
 
                 case LogicalNode ln2:
-                    ln2.Left = AnalyzeNode(ln2.Left, ln2);
-                    ln2.Right = AnalyzeNode(ln2.Right, ln2);
+                    ln2.Left = AnalyzeNode(ln2.Left, ln2, variableDeclarations);
+                    ln2.Right = AnalyzeNode(ln2.Right, ln2, variableDeclarations);
                     break;
                 case ArithmeticNode an:
-                    an.Left = AnalyzeNode(an.Left, an);
-                    an.Right = AnalyzeNode(an.Right, an);
+                    an.Left = AnalyzeNode(an.Left, an, variableDeclarations);
+                    an.Right = AnalyzeNode(an.Right, an, variableDeclarations);
                     break;
                 case PlaceHolderNode pn:
+                    break;
+                case DeclarationExpressionNode den:
+                    variableDeclarations.Add(den.VariableIdentifier.RawValue);
+                    break;
+                case ReturnNode rn:
+                    rn.Value = AnalyzeNode(rn.Value, rn, variableDeclarations);
+                    break;
+                case AssignmentNode an:
+                    an.Target = AnalyzeNode(an.Target, an, variableDeclarations);
+                    an.Value = AnalyzeNode(an.Value, an, variableDeclarations);
+                    break;
+                case CastExpressionNode cen:
+                    cen.Expression = AnalyzeNode(cen.Expression, cen, variableDeclarations);
                     break;
                 case ListNode list:
                 {
@@ -195,7 +236,9 @@
                     break;
                 }
                 default:
+                {
                     throw new Exception($"MythSemanticAnalyzer.AnalyzeNode 不支持的节点类型: {node.GetType()}");
+                }
             }
 
             return node;

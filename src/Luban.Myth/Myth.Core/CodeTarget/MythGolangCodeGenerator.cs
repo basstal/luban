@@ -141,6 +141,28 @@ namespace Myth
             {
                 return string.IsNullOrEmpty(pn.OutputValue) ? pn.Name : pn.OutputValue;
             }
+            else if (node is DeclarationExpressionNode den)
+            {
+                var type = MythTypeUtil.ParseType(den.TypeIdentifier.RawValue);
+                return $"{den.VariableIdentifier.RawValue} := {MythTypeUtil.MythValueTypeToGoString(type)}";
+            }
+            else if (node is AssignmentNode assignmentNode)
+            {
+                var target = GenerateExpressionCode(assignmentNode.Target, assignmentNode);
+                var value = GenerateExpressionCode(assignmentNode.Value, assignmentNode);
+                return $"{target}({value})";
+            }
+            else if (node is ReturnNode returnNode)
+            {
+                var value = GenerateExpressionCode(returnNode.Value, returnNode);
+                return $"return {value}";
+            }
+            else if (node is CastExpressionNode cen)
+            {
+                var exprCode = GenerateExpressionCode(cen.Expression, cen);
+                var typeCode = MythTypeUtil.MythValueTypeToGoString(cen.TargetType);
+                return $"(({typeCode}){exprCode})";
+            }
 
             return "/*UNKNOWN*/";
         }

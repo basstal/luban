@@ -89,25 +89,6 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
         public string ReturnType { get; set; }
         public string Parameters { get; set; }
         public List<string> BodyLines { get; set; }
-
-        public static string MythValueTypeToGoString(MythValueType inValueType)
-        {
-            switch (inValueType)
-            {
-                case MythValueType.Int:
-                case MythValueType.IntTenThousandth:
-                case MythValueType.Float:
-                    return "int32";
-                case MythValueType.Bool:
-                    return "bool";
-                case MythValueType.String:
-                    return "string";
-                case MythValueType.Enum:
-                    return "int32"; // Assuming enums are represented as integers in Go
-                default:
-                    return "interface{}"; // Fallback for unknown types
-            }
-        }
     }
 
     private bool HandlePlaceHolderNode_Go(List<MythExprNode> nodes, GenerationContext ctx)
@@ -158,6 +139,27 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
                     return true;
                 }
             }
+            else if (node is AssignmentNode assignmentNode)
+            {
+                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { assignmentNode.Target, assignmentNode.Value }, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is ReturnNode returnNode)
+            {
+                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { returnNode.Value }, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is CastExpressionNode castExpressionNode)
+            {
+                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { castExpressionNode.Expression }, ctx))
+                {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -174,8 +176,8 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             var outputFunction = new GoOutputFunction()
             {
                 Name = functionBody.Signature.Name,
-                ReturnType = GoOutputFunction.MythValueTypeToGoString(functionBody.Signature.ReturnType),
-                Parameters = string.Join(", ", functionBody.Signature.Parameters.Select(p => p.VariableSignature + " " + GoOutputFunction.MythValueTypeToGoString(p.Type)).ToList()),
+                ReturnType = MythTypeUtil.MythValueTypeToGoStringNoFloat(functionBody.Signature.ReturnType),
+                Parameters = string.Join(", ", functionBody.Signature.Parameters.Select(p => p.VariableSignature + " " + MythTypeUtil.MythValueTypeToGoStringNoFloat(p.Type)).ToList()),
             };
 
             if (HandlePlaceHolderNode_Go(functionBody.ParsedBodyLines, ctx))
@@ -186,10 +188,10 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             }
 
             outputFunction.BodyLines = functionBody.ParsedBodyLines.Select(node => mythCodeGenerator.GenerateExpressionCode(node)).ToList();
-            if (functionBody.ParsedBodyLines.Count == 1)
-            {
-                outputFunction.BodyLines[0] = "return " + outputFunction.BodyLines[0];
-            }
+            // if (functionBody.ParsedBodyLines.Count == 1)
+            // {
+            //     outputFunction.BodyLines[0] = "return " + outputFunction.BodyLines[0];
+            // }
             return outputFunction;
         }).ToList();
 

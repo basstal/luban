@@ -2,19 +2,65 @@
 
 public class MythParser
 {
-    private List<MythToken> _tokens;
-    private int _index;
+    private List<MythToken> m_tokens;
+    private int m_index;
 
     public MythParser(List<MythToken> tokens)
     {
-        _tokens = tokens;
-        _index = 0;
+        m_tokens = tokens;
+        m_index = 0;
+    }
+
+    public MythExprNode ParseStatement()
+    {
+        if (Match(MythTokenType.KeywordReturn))
+        {
+            return ParseReturnStatement();
+        }
+        return ParseExpression();
+    }
+
+    private MythExprNode ParseReturnStatement()
+    {
+        Consume(MythTokenType.KeywordReturn);
+        MythExprNode value = null;
+        if (!IsEnd() && !Match(MythTokenType.Semicolon))
+        {
+            value = ParseExpression(false);
+        }
+        return new ReturnNode(value);
     }
 
     public MythExprNode ParseExpression(bool allowList = true)
     {
-        // Start parsing from the lowest precedence level (logical OR)
-        return ParseOrExpr(allowList);
+        // Start parsing from the lowest precedence level (assignment)
+        return ParseAssignmentExpr(allowList);
+    }
+
+    // Precedence 0: Assignment (=) - Right-associative
+    private MythExprNode ParseAssignmentExpr(bool allowList)
+    {
+        var left = ParseOrExpr(allowList); // Parse higher-precedence expression first
+
+        if (Match(MythTokenType.Assign))
+        {
+            // The target of an assignment must be a valid l-value (e.g., an identifier or a declaration).
+            bool isValidLValue = left is PlaceHolderNode ||
+                                 left is DeclarationExpressionNode ||
+                                 (left is LiteralNode ln && ln.ValueType == MythValueType.Unknown);
+
+            if (!isValidLValue)
+            {
+                throw new Exception($"Invalid assignment target. Expected an identifier or declaration but got {left.GetType().Name}.");
+            }
+
+            Consume(MythTokenType.Assign);
+            // Recursively call for right-associativity (e.g., a = b = 5)
+            var right = ParseAssignmentExpr(false);
+            return new AssignmentNode(left, right);
+        }
+
+        return left;
     }
 
     // Precedence 1: Or (||)
@@ -95,11 +141,30 @@ public class MythParser
     {
         if (Match(MythTokenType.LParen))
         {
-            Consume(MythTokenType.LParen);
-            // Restart the precedence chain inside the parentheses
-            var expr = ParseExpression(false);
-            Consume(MythTokenType.RParen);
-            return expr;
+            // Lookahead to check for a cast expression: `(TypeName)expr`
+            var tokenInside = Peek(1);
+            var tokenAfter = Peek(2);
+
+            if (tokenInside.Type == MythTokenType.Identifier && tokenAfter.Type == MythTokenType.RParen && MythTypeUtil.TryParseType(tokenInside.Text, out var targetType))
+            {
+                // It's a cast expression
+                Consume(MythTokenType.LParen);
+                Consume(MythTokenType.Identifier);
+                Consume(MythTokenType.RParen);
+
+                // The cast operator has high precedence, so it applies to the next primary expression.
+                var expressionToCast = ParsePrimaryExpr(false);
+                return new CastExpressionNode(targetType, expressionToCast);
+            }
+            else
+            {
+                // It's a regular parenthesized expression
+                Consume(MythTokenType.LParen);
+                // Restart the precedence chain inside the parentheses
+                var expr = ParseExpression(false);
+                Consume(MythTokenType.RParen);
+                return expr;
+            }
         }
         // If not a parenthesis, it must be a value (literal, variable, function call)
         return ParseValueExpr(allowList);
@@ -174,6 +239,21 @@ public class MythParser
     {
         var idToken = Peek();
         var tokenText = idToken.Text;
+
+        // If `id id`, parse as a declaration fragment
+        if (Peek(1).Type == MythTokenType.Identifier)
+        {
+            Advance(); // Consume type identifier
+            var typeIdNode = new LiteralNode(tokenText, MythValueType.Unknown);
+
+            var varToken = Peek();
+            Advance(); // Consume variable identifier
+            var varIdNode = new LiteralNode(varToken.Text, MythValueType.Unknown);
+
+            return new DeclarationExpressionNode(typeIdNode, varIdNode);
+        }
+
+        // Standard identifier or function call parsing
         Advance();
 
         // If followed by '(', it's a function call
@@ -232,7 +312,7 @@ public class MythParser
     {
         if (IsEnd())
         { return false; }
-        var currentType = _tokens[_index].Type;
+        var currentType = m_tokens[m_index].Type;
         return types.Contains(currentType);
     }
 
@@ -240,8 +320,8 @@ public class MythParser
     {
         if (Match(type))
         {
-            var t = _tokens[_index];
-            _index++;
+            var t = m_tokens[m_index];
+            m_index++;
             return t;
         }
         return null;
@@ -249,13 +329,13 @@ public class MythParser
 
     private MythToken Peek(int offset = 0)
     {
-        if (_index + offset < _tokens.Count)
+        if (m_index + offset < m_tokens.Count)
         {
-            return _tokens[_index + offset];
+            return m_tokens[m_index + offset];
         }
-        return _tokens[_tokens.Count - 1]; // Return END token
+        return m_tokens[m_tokens.Count - 1]; // Return END token
     }
 
-    private void Advance() => _index++;
-    private bool IsEnd() => _index >= _tokens.Count || _tokens[_index].Type == MythTokenType.End;
+    private void Advance() => m_index++;
+    private bool IsEnd() => m_index >= m_tokens.Count || m_tokens[m_index].Type == MythTokenType.End;
 }

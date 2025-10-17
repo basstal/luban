@@ -95,25 +95,6 @@ public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTempl
         public string ReturnType { get; set; }
         public string Parameters { get; set; }
         public List<string> BodyLines { get; set; }
-
-        public static string MythValueTypeToString(MythValueType inValueType)
-        {
-            switch (inValueType)
-            {
-                case MythValueType.Int:
-                case MythValueType.IntTenThousandth:
-                case MythValueType.Float:
-                    return "int";
-                case MythValueType.Bool:
-                    return "bool";
-                case MythValueType.String:
-                    return "string";
-                case MythValueType.Enum:
-                    return "int";
-                default:
-                    return "unknown";
-            }
-        }
     }
 
     private bool HandlePlaceHolderNode(List<MythExprNode> nodes, GenerationContext ctx)
@@ -163,6 +144,27 @@ public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTempl
                     return true;
                 }
             }
+            else if (node is AssignmentNode assignmentNode)
+            {
+                if (HandlePlaceHolderNode(new List<MythExprNode> { assignmentNode.Target, assignmentNode.Value }, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is ReturnNode returnNode)
+            {
+                if (HandlePlaceHolderNode(new List<MythExprNode> { returnNode.Value }, ctx))
+                {
+                    return true;
+                }
+            }
+            else if (node is CastExpressionNode castExpressionNode)
+            {
+                if (HandlePlaceHolderNode(new List<MythExprNode> { castExpressionNode.Expression }, ctx))
+                {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -176,18 +178,18 @@ public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTempl
             var outputFunction = new OutputFunction()
             {
                 Name = functionBody.Signature.Name,
-                ReturnType = OutputFunction.MythValueTypeToString(functionBody.Signature.ReturnType),
-                Parameters = string.Join(", ", functionBody.Signature.Parameters.Select(p => OutputFunction.MythValueTypeToString(p.Type) + " " + p.VariableSignature).ToList()),
+                ReturnType = MythTypeUtil.MythValueTypeToCSharpNoFloat(functionBody.Signature.ReturnType),
+                Parameters = string.Join(", ", functionBody.Signature.Parameters.Select(p => MythTypeUtil.MythValueTypeToCSharpNoFloat(p.Type) + " " + p.VariableSignature).ToList()),
             };
             if (HandlePlaceHolderNode(functionBody.ParsedBodyLines, ctx))
             {
                 outputFunction.Parameters = "cfg.Tables inTables, " + outputFunction.Parameters;
             }
             outputFunction.BodyLines = functionBody.ParsedBodyLines.Select(node => mythCodeGenerator.GenerateExpressionCode(node)).ToList();
-            if (functionBody.ParsedBodyLines.Count == 1)
-            {
-                outputFunction.BodyLines[0] = "return " + outputFunction.BodyLines[0];
-            }
+            // if (functionBody.ParsedBodyLines.Count == 1)
+            // {
+            //     outputFunction.BodyLines[0] = "return " + outputFunction.BodyLines[0];
+            // }
             return outputFunction;
         }).ToList();
         var extraEnvs = new ScriptObject
