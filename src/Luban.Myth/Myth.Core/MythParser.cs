@@ -23,7 +23,7 @@ public class MythParser
     private MythExprNode ParseReturnStatement()
     {
         Consume(MythTokenType.KeywordReturn);
-        MythExprNode value = null;
+        MythExprNode? value = null;
         if (!IsEnd() && !Match(MythTokenType.Semicolon))
         {
             value = ParseExpression(false);
@@ -40,7 +40,7 @@ public class MythParser
     // Precedence 0: Assignment (=) - Right-associative
     private MythExprNode ParseAssignmentExpr(bool allowList)
     {
-        var left = ParseOrExpr(allowList); // Parse higher-precedence expression first
+        var left = ParseConditionalExpr(allowList); // Parse higher-precedence expression first
 
         if (Match(MythTokenType.Assign))
         {
@@ -61,6 +61,25 @@ public class MythParser
         }
 
         return left;
+    }
+
+    // Precedence 0.5: Conditional/Ternary (?:) - Right-associative
+    private MythExprNode ParseConditionalExpr(bool allowList)
+    {
+        var condition = ParseOrExpr(allowList);
+
+        if (Match(MythTokenType.Question))
+        {
+            Consume(MythTokenType.Question);
+            // The middle part of a ternary can be a full expression, but not a list.
+            var thenExpr = ParseExpression(false);
+            Consume(MythTokenType.Colon);
+            // The final part is recursive to handle right-associativity
+            var elseExpr = ParseConditionalExpr(false);
+            return new ConditionalExpressionNode(condition, thenExpr, elseExpr);
+        }
+
+        return condition;
     }
 
     // Precedence 1: Or (||)
@@ -94,6 +113,10 @@ public class MythParser
     private MythExprNode ParseComparison(bool allowList)
     {
         var left = ParseAdditiveExpr(allowList);
+        if (left is null)
+        {
+            throw new Exception("Syntax error: missing expression.");
+        }
         // Comparison operators are not associative, so we only parse one
         if (Match(MythTokenType.Equal, MythTokenType.NotEqual, MythTokenType.Greater, MythTokenType.GreaterEq, MythTokenType.Less, MythTokenType.LessEq))
         {
@@ -101,43 +124,63 @@ public class MythParser
             var op = TokenToCompareOp(opToken.Type);
             Advance();
             var right = ParseAdditiveExpr(false);
+            if (right is null)
+            {
+                throw new Exception("Syntax error: missing expression after operator.");
+            }
             return new ComparisonNode(left, op, right);
         }
         return left;
     }
 
     // Precedence 4: Additive (+, -)
-    private MythExprNode ParseAdditiveExpr(bool allowList)
+    private MythExprNode? ParseAdditiveExpr(bool allowList)
     {
         var left = ParseMultiplicativeExpr(allowList);
         while (Match(MythTokenType.Plus, MythTokenType.Minus))
         {
+            if (left is null)
+            {
+                throw new Exception("Syntax error: missing expression.");
+            }
             var opToken = Peek();
             var op = TokenToArithmeticOp(opToken.Type);
             Advance();
             var right = ParseMultiplicativeExpr(false);
+            if (right is null)
+            {
+                throw new Exception("Syntax error: missing expression after operator.");
+            }
             left = new ArithmeticNode(left, op, right);
         }
         return left;
     }
 
     // Precedence 5: Multiplicative (*, /)
-    private MythExprNode ParseMultiplicativeExpr(bool allowList)
+    private MythExprNode? ParseMultiplicativeExpr(bool allowList)
     {
         var left = ParsePrimaryExpr(allowList);
         while (Match(MythTokenType.Asterisk, MythTokenType.Slash))
         {
+            if (left is null)
+            {
+                throw new Exception("Syntax error: missing expression.");
+            }
             var opToken = Peek();
             var op = TokenToArithmeticOp(opToken.Type);
             Advance();
             var right = ParsePrimaryExpr(false);
+            if (right is null)
+            {
+                throw new Exception("Syntax error: missing expression after operator.");
+            }
             left = new ArithmeticNode(left, op, right);
         }
         return left;
     }
 
     // Precedence 6: Primary (Parentheses, Literals, Functions)
-    private MythExprNode ParsePrimaryExpr(bool allowList)
+    private MythExprNode? ParsePrimaryExpr(bool allowList)
     {
         if (Match(MythTokenType.LParen))
         {
@@ -154,6 +197,10 @@ public class MythParser
 
                 // The cast operator has high precedence, so it applies to the next primary expression.
                 var expressionToCast = ParsePrimaryExpr(false);
+                if (expressionToCast is null)
+                {
+                    throw new Exception("Syntax error: missing expression for cast.");
+                }
                 return new CastExpressionNode(targetType, expressionToCast);
             }
             else
@@ -171,9 +218,9 @@ public class MythParser
     }
 
     // Parses literals, identifiers (variables), and function calls
-    private MythExprNode ParseValueExpr(bool allowList = false)
+    private MythExprNode? ParseValueExpr(bool allowList = false)
     {
-        MythExprNode ParseSingleValue()
+        MythExprNode? ParseSingleValue()
         {
             var token = Peek();
             switch (token.Type)
@@ -316,7 +363,7 @@ public class MythParser
         return types.Contains(currentType);
     }
 
-    private MythToken Consume(MythTokenType type)
+    private MythToken? Consume(MythTokenType type)
     {
         if (Match(type))
         {

@@ -73,4 +73,6 @@ public enum MythTokenType
     Slash = 22,
     Assign = 23,
     KeywordReturn = 24,
+    Question = 25,
+    Colon = 26,
 }

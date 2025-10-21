@@ -170,6 +170,13 @@ namespace Myth
                 var typeCode = MythTypeUtil.MythValueTypeToCSharp(cen.TargetType);
                 return $"(({typeCode}){exprCode})";
             }
+            else if (node is ConditionalExpressionNode conditionalExpressionNode)
+            {
+                var condition = GenerateExpressionCode(conditionalExpressionNode.Condition, conditionalExpressionNode);
+                var thenExpr = GenerateExpressionCode(conditionalExpressionNode.ThenExpr, conditionalExpressionNode);
+                var elseExpr = GenerateExpressionCode(conditionalExpressionNode.ElseExpr, conditionalExpressionNode);
+                return $"({condition} ? {thenExpr} : {elseExpr})";
+            }
             return "/*UNKNOWN*/";
         }
 

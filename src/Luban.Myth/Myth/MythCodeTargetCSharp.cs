@@ -165,6 +165,13 @@ public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTempl
                     return true;
                 }
             }
+            else if (node is ConditionalExpressionNode conditionalExpressionNode)
+            {
+                if (HandlePlaceHolderNode(new List<MythExprNode> { conditionalExpressionNode.Condition, conditionalExpressionNode.ThenExpr, conditionalExpressionNode.ElseExpr }, ctx))
+                {
+                    return true;
+                }
+            }
         }
         return false;
     }

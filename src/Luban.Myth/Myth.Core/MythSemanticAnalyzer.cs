@@ -76,6 +76,11 @@
                 case CastExpressionNode cen:
                     cen.Expression = ResolvePlaceholders(cen.Expression, placeholders);
                     break;
+                case ConditionalExpressionNode conditionExpressionNode:
+                    conditionExpressionNode.Condition = ResolvePlaceholders(conditionExpressionNode.Condition, placeholders);
+                    conditionExpressionNode.ThenExpr = ResolvePlaceholders(conditionExpressionNode.ThenExpr, placeholders);
+                    conditionExpressionNode.ElseExpr = ResolvePlaceholders(conditionExpressionNode.ElseExpr, placeholders);
+                    break;
             }
 
             return node;
@@ -129,6 +134,11 @@
                     break;
                 case CastExpressionNode cen:
                     cen.Expression = LocateVariables(cen.Expression, signature, variableDeclarations);
+                    break;
+                case ConditionalExpressionNode conditionExpressionNode:
+                    conditionExpressionNode.Condition = LocateVariables(conditionExpressionNode.Condition, signature, variableDeclarations);
+                    conditionExpressionNode.ThenExpr = LocateVariables(conditionExpressionNode.ThenExpr, signature, variableDeclarations);
+                    conditionExpressionNode.ElseExpr = LocateVariables(conditionExpressionNode.ElseExpr, signature, variableDeclarations);
                     break;
             }
             return node;
@@ -218,6 +228,11 @@
                     break;
                 case CastExpressionNode cen:
                     cen.Expression = AnalyzeNode(cen.Expression, cen, variableDeclarations);
+                    break;
+                case ConditionalExpressionNode conditionExpressionNode:
+                    conditionExpressionNode.Condition = AnalyzeNode(conditionExpressionNode.Condition, conditionExpressionNode, variableDeclarations);
+                    conditionExpressionNode.ThenExpr = AnalyzeNode(conditionExpressionNode.ThenExpr, conditionExpressionNode, variableDeclarations);
+                    conditionExpressionNode.ElseExpr = AnalyzeNode(conditionExpressionNode.ElseExpr, conditionExpressionNode, variableDeclarations);
                     break;
                 case ListNode list:
                 {

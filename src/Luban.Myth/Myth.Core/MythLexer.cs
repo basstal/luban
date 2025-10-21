@@ -162,6 +162,14 @@ public class MythLexer
                     tokens.Add(new MythToken(MythTokenType.Slash, "/"));
                     Advance();
                     break;
+                case '?':
+                    tokens.Add(new MythToken(MythTokenType.Question, "?"));
+                    Advance();
+                    break;
+                case ':':
+                    tokens.Add(new MythToken(MythTokenType.Colon, ":"));
+                    Advance();
+                    break;
                 default:
                     // 简化：遇到无法识别的字符，就跳过
                     Advance();

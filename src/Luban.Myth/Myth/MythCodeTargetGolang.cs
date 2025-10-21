@@ -160,6 +160,13 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
                     return true;
                 }
             }
+            else if (node is ConditionalExpressionNode conditionalExpressionNode)
+            {
+                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { conditionalExpressionNode.Condition, conditionalExpressionNode.ThenExpr, conditionalExpressionNode.ElseExpr }, ctx))
+                {
+                    return true;
+                }
+            }
         }
         return false;
     }
