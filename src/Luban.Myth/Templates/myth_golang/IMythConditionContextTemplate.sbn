@@ -6,6 +6,8 @@ package {{__golang_top_myth_package}}
 type {{__interface_name}} interface {
     GetInt(key string) int
     GetBool(key string) bool
-    EvalFunction(funcName string, args ...interface{}) int
+    EvalFunctionReturnInt(funcName string, args ...interface{}) int
     EvalFunctionReturnBool(funcName string, args ...interface{}) bool
+    GetLong(key string) int64
+    EvalFunctionReturnLong(funcName string, args ...interface{}) int64
 } 

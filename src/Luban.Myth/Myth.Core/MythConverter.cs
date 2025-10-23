@@ -56,7 +56,7 @@ public class MythConverter
                     return "GetInt";
                 }
 
-                return "EvalFunction";
+                return "EvalFunctionReturnInt";
             }
             case MythValueType.Bool:
             {
@@ -67,8 +67,17 @@ public class MythConverter
 
                 return "EvalFunctionReturnBool";
             }
+            case MythValueType.Long:
+            {
+                if (!haveParams)
+                {
+                    return "GetLong";
+                }
+
+                return "EvalFunctionReturnLong";
+            }
         }
 
-        throw new NotImplementedException("GetEvalFunctionByFunctionSignature failed!");
+        throw new NotImplementedException($"GetEvalFunctionByFunctionSignature for return type:{returnType} failed!");
     }
 }

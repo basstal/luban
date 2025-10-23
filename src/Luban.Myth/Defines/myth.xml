@@ -26,8 +26,10 @@
         <var name="Unknown"                value="0" />
         <var name="GetInt"                 value="1" />
         <var name="GetBool"                value="2" />
-        <var name="EvalFunction"           value="3" />
+        <var name="EvalFunctionReturnInt"  value="3" />
         <var name="EvalFunctionReturnBool" value="4" />
+        <var name="EvalFunctionReturnLong" value="5" />
+        <var name="GetLong"                 value="6" />
     </enum>
     <enum name="MythValueType"          unique="TRUE">
         <var name="Unknown"                value="0" />
@@ -38,6 +40,9 @@
         <var name="String"                 value="5" />
         <var name="Enum"                   value="6" />
         <var name="ValueArray"                 value="7" />
+        <var name="Void"                   value="8" />
+        <var name="Variable"               value="9" />
+        <var name="Long"                   value="10" />
     </enum>
     <enum name="MythOperatorType"       unique="TRUE">
         <var name="Unknown"                value="0" />
@@ -52,5 +57,11 @@
         <var name="Unknown"                value="0" />
         <var name="And"                    value="1" />
         <var name="Or"                     value="2" />
+    </enum>
+    <enum name="MythArithmeticType"        unique="TRUE">
+        <var name="Add"                    value="1" />
+        <var name="Subtract"               value="2" />
+        <var name="Multiply"               value="3" />
+        <var name="Divide"                 value="4" />
     </enum>
 </module>

@@ -5,6 +5,8 @@ public interface {{__interface_name}}
 {
     int GetInt(string key);
     bool GetBool(string key);
-    int EvalFunction(string funcName, params object[] args);
+    int EvalFunctionReturnInt(string funcName, params object[] args);
     bool EvalFunctionReturnBool(string funcName, params object[] args);
+    long GetLong(string key);
+    long EvalFunctionReturnLong(string funcName, params object[] args);
 }

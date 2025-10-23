@@ -16,15 +16,8 @@ namespace Myth
                 case MythValueType.Int:
                 case MythValueType.IntTenThousandth:
                 case MythValueType.Float:
-                {
-                    if (string.IsNullOrEmpty(parameters))
-                    {
-                        return $"ctx.{evalFunction}(\"{functionSignature.Name}\")";
-                    }
-
-                    return $"ctx.{evalFunction}(\"{functionSignature.Name}\", {parameters})";
-                }
                 case MythValueType.Bool:
+                case MythValueType.Long:
                 {
                     if (string.IsNullOrEmpty(parameters))
                     {
@@ -35,7 +28,7 @@ namespace Myth
                 }
             }
 
-            throw new NotImplementedException("GetEvalContextByFunctionSignature failed!");
+            throw new NotImplementedException($"GetEvalContextByFunctionSignature for return type:{returnType} failed!");
         }
 
         /// <summary>
@@ -49,6 +42,8 @@ namespace Myth
                 switch (ln.ValueType)
                 {
                     case MythValueType.Int:
+                    case MythValueType.Long:
+                    case MythValueType.Variable:
                     {
                         return ln.RawValue; // 直接输出数字
                     }
@@ -95,10 +90,6 @@ namespace Myth
                         }
 
                         return $"\"{ln.RawValue}\"";
-                    }
-                    case MythValueType.Variable:
-                    {
-                        return ln.RawValue;
                     }
                     default:
                     {

@@ -15,13 +15,8 @@ namespace Myth
             {
                 case MythValueType.Int:
                 case MythValueType.IntTenThousandth:
-                    if (string.IsNullOrEmpty(parameters))
-                    {
-                        return $"ctx.{evalFunction}(\"{functionSignature.Name}\")";
-                    }
-
-                    return $"ctx.{evalFunction}(\"{functionSignature.Name}\", {parameters})";
                 case MythValueType.Bool:
+                case MythValueType.Long:
                     if (string.IsNullOrEmpty(parameters))
                     {
                         return $"ctx.{evalFunction}(\"{functionSignature.Name}\")";
@@ -30,7 +25,7 @@ namespace Myth
                     return $"ctx.{evalFunction}(\"{functionSignature.Name}\", {parameters})";
             }
 
-            throw new NotImplementedException("GetEvalContextByFunctionSignature failed!");
+            throw new NotImplementedException($"GetEvalContextByFunctionSignature for return type:{returnType} failed!");
         }
 
         /// <summary>
@@ -44,6 +39,7 @@ namespace Myth
                 switch (ln.ValueType)
                 {
                     case MythValueType.Int:
+                    case MythValueType.Variable:
                     {
                         return ln.RawValue; // 直接输出数字
                     }
@@ -91,9 +87,9 @@ namespace Myth
 
                         return $"\"{ln.RawValue}\"";
                     }
-                    case MythValueType.Variable:
+                    case MythValueType.Long:
                     {
-                        return ln.RawValue;
+                        return $"int64({ln.RawValue})";
                     }
                     default:
                         throw new NotImplementedException($"Unknown ValueType or {ln.ValueType} is not supported yet");
@@ -154,21 +150,31 @@ namespace Myth
             }
             else if (node is ReturnNode returnNode)
             {
-                var value = GenerateExpressionCode(returnNode.Value, returnNode);
-                return $"return {value}";
+                if (returnNode.Value is ConditionalExpressionNode returnConditionalExpressionNode)
+                {
+                    var condition = GenerateExpressionCode(returnConditionalExpressionNode.Condition, returnConditionalExpressionNode);
+                    var thenExpr = GenerateExpressionCode(returnConditionalExpressionNode.ThenExpr, returnConditionalExpressionNode);
+                    var elseExpr = GenerateExpressionCode(returnConditionalExpressionNode.ElseExpr, returnConditionalExpressionNode);
+                    return $"if ({condition}){{\n  return {thenExpr}\n}}\nreturn {elseExpr}\n";
+                }
+                else
+                {
+                    var value = GenerateExpressionCode(returnNode.Value, returnNode);
+                    return $"return {value}";
+                }
             }
             else if (node is CastExpressionNode cen)
             {
                 var exprCode = GenerateExpressionCode(cen.Expression, cen);
                 var typeCode = MythTypeUtil.MythValueTypeToGoString(cen.TargetType);
-                return $"(({typeCode}){exprCode})";
+                return $"({typeCode}({exprCode}))";
             }
             else if (node is ConditionalExpressionNode conditionalExpressionNode)
             {
                 var condition = GenerateExpressionCode(conditionalExpressionNode.Condition, conditionalExpressionNode);
                 var thenExpr = GenerateExpressionCode(conditionalExpressionNode.ThenExpr, conditionalExpressionNode);
                 var elseExpr = GenerateExpressionCode(conditionalExpressionNode.ElseExpr, conditionalExpressionNode);
-                return $"({condition} ? {thenExpr} : {elseExpr})";
+                return $"if ({condition}){{\n  {thenExpr}\n}}\n{elseExpr}\n";
             }
 
             return "/*UNKNOWN*/";

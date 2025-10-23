@@ -28,6 +28,8 @@ namespace Myth
                     return MythValueType.Enum;
                 case "浮点数":
                     return MythValueType.Float;
+                case "长整数":
+                    return MythValueType.Long;
                 default:
                     return MythValueType.Unknown;
             }

@@ -2,16 +2,17 @@
 
 public enum MythValueType
 {
-    Unknown,
-    Void,
-    Bool,
-    Int,
-    IntTenThousandth,
-    Float,
-    String,
-    Enum,
-    ValueArray,
-    Variable,
+    Unknown = 0,
+    Int = 1,
+    IntTenThousandth = 2,
+    Float = 3,
+    Bool = 4,
+    String = 5,
+    Enum = 6,
+    ValueArray = 7,
+    Void = 8,
+    Variable = 9,
+    Long = 10,
 }
 
 public enum MythCompareOp

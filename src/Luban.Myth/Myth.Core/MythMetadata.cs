@@ -18,6 +18,7 @@ namespace Myth
         public List<string> StringLiterals = new List<string>(); // string 常量
         public List<string> BoolLiterals = new List<string>(); // bool 常量
         public List<string> EnumLiterals = new List<string>(); // 枚举常量
+        public List<string> LongLiterals = new List<string>(); // long 常量
         public MythCompareOp Operator = MythCompareOp.Unknown;
         public MythValueType FunctionReturnType = MythValueType.Unknown;
         public string CompareToLiteralValue = string.Empty;
@@ -101,6 +102,11 @@ namespace Myth
                             meta.EnumLiterals.Add(ln.RawValue);
                             meta.CompareToLiteralValue = ln.RawValue;
                             meta.CompareToLiteralValueType = MythValueType.Enum;
+                            break;
+                        case MythValueType.Long:
+                            meta.LongLiterals.Add(ln.RawValue);
+                            meta.CompareToLiteralValue = ln.RawValue;
+                            meta.CompareToLiteralValueType = MythValueType.Long;
                             break;
                         default:
                             throw new NotImplementedException($"不支持的常量类型: {ln.ValueType}, 常量值: {ln.RawValue}");
