@@ -24,5 +24,7 @@ public class RawTable
 
     public List<string> InputFiles { get; set; } = new();
 
+    public string SourceFile { get; set; }
+
     public string OutputFile { get; set; }
 }

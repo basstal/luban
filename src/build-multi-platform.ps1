@@ -1,5 +1,5 @@
 param(
-    [string]$OutputDir = "D:\svn_repo\trunk\Externals\luban\publish",
+    [string]$OutputDir = "C:\FD2\trunk\Externals\luban\publish",
     [string]$Configuration = "Release",
     [string[]]$Runtimes = @("win-x64", "linux-arm64", "osx-x64", "osx-arm64")
 )

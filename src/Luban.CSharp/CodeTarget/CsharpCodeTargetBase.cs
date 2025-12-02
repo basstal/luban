@@ -258,14 +258,28 @@ public abstract class CsharpCodeTargetBase : TemplateCodeTargetBase
         var relativePath = Path.GetRelativePath(unityProjectDir, inputDataDir).Replace("\\", "/");
         var xlsxTables = ctx.ExportTables.Select(table =>
         {
+            var sourceFile = table.SourceFile;
+            string relativeSourceFile = "";
+            if (!string.IsNullOrEmpty(sourceFile))
+            {
+                if (Path.IsPathRooted(sourceFile))
+                {
+                    relativeSourceFile = Path.GetRelativePath(unityProjectDir, sourceFile).Replace("\\", "/");
+                }
+                else
+                {
+                    relativeSourceFile = sourceFile.Replace("\\", "/");
+                }
+            }
+
             if (table.Tags.TryGetValue("中文名", out var tag))
             {
                 // 这为啥是数组？有啥其他规则嘛？
-                return (tag, table.ValueTType.DefBean.Name, table.InputFiles[0], relativePath);
+                return (tag, table.ValueTType.DefBean.Name, table.InputFiles[0], relativePath, relativeSourceFile);
             }
 
             // 这为啥是数组？有啥其他规则嘛？
-            return (table.ValueTType.DefBean.Name, table.ValueTType.DefBean.Name, table.InputFiles[0], relativePath);
+            return (table.ValueTType.DefBean.Name, table.ValueTType.DefBean.Name, table.InputFiles[0], relativePath, relativeSourceFile);
         });
         var extraEnvs = new ScriptObject
         {

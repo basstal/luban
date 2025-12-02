@@ -26,6 +26,7 @@ public static class SchemaLoaderUtil
             Mode = ConvertMode(schemaFile, name, mode, index),
             Tags = DefUtil.ParseAttrs(tags),
             OutputFile = outputFileName,
+            SourceFile = schemaFile,
         };
         if (string.IsNullOrWhiteSpace(name))
         {

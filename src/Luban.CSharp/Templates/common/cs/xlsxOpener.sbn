@@ -13,6 +13,17 @@ public class XlsxExplorer
         var path = Path.Combine(Directory.GetCurrentDirectory(), "{{~xlsx_info.item4~}}", "{{~xlsx_info.item3~}}");
         FileExplorer.ProcessFileOpen(path);
     }
+
+#if EDITOR_DEBUG
+    {{~if xlsx_info.item5 != "" ~}}
+    [MenuItem("数据档/数据档定义/{{~xlsx_info.item1~}}")]
+    public static void Open{{~xlsx_info.item2~}}Def()
+    {
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "{{~xlsx_info.item5~}}");
+        FileExplorer.ProcessFileOpen(path);
+    }
+    {{~end~}}
+#endif
 {{~end~}}
 }
 #endif

@@ -25,9 +25,12 @@ public class DefTable : DefTypeBase
         ReadSchemaFromFile = b.ReadSchemaFromFile;
         Tags = b.Tags;
         _outputFile = b.OutputFile;
+        SourceFile = b.SourceFile;
     }
 
     public string Index { get; private set; }
+
+    public string SourceFile { get; }
 
     public string ValueType { get; }
 
