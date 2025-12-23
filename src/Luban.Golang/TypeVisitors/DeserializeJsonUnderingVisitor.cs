@@ -12,12 +12,12 @@ class DeserializeJsonUnderingVisitor : ITypeFuncVisitor<string, string, int, str
 
     public string Accept(TBool type, string varName, string bufName, int depth)
     {
-        return $"{{ var _ok_ bool; if {varName}, _ok_ = {bufName}.(bool); !_ok_ {{ err = errors.New(\"{varName} error\"); return }} }}";
+        return $"{{ var _ok_ bool; if {varName}, _ok_ = {bufName}.(bool); !_ok_ {{ err = errors.New(\"{varName} is not bool\"); return }} }}";
     }
 
     private string DeserializeNumber(TType type, string varName, string bufName, int depth)
     {
-        return $"{{ var _ok_ bool; var _x_ float64; if _x_, _ok_ = {bufName}.(float64); !_ok_ {{ err = errors.New(\"{varName} error\"); return }}; {varName} = {type.Apply(UnderlyingDeclaringTypeNameVisitor.Ins)}(_x_) }}";
+        return $"{{ var _ok_ bool; var _x_ float64; if _x_, _ok_ = {bufName}.(float64); !_ok_ {{ err = errors.New(\"{varName} is not float64\"); return }}; {varName} = {type.Apply(UnderlyingDeclaringTypeNameVisitor.Ins)}(_x_) }}";
     }
 
     public string Accept(TByte type, string varName, string bufName, int depth)
@@ -58,7 +58,7 @@ class DeserializeJsonUnderingVisitor : ITypeFuncVisitor<string, string, int, str
 
     private string DeserializeString(TType type, string varName, string bufName, int depth)
     {
-        return $"{{  if {varName}, _ok_ = {bufName}.(string); !_ok_ {{ err = errors.New(\"{varName} error\"); return }} }}";
+        return $"{{  if {varName}, _ok_ = {bufName}.(string); !_ok_ {{ err = errors.New(\"{varName} is not string\"); return }} }}";
     }
 
     public string Accept(TString type, string varName, string bufName, int depth)

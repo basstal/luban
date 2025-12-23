@@ -20,6 +20,8 @@ func NewTables(loader JsonLoader) (*{{__name}}, error) {
         return nil, err
     }
     if tables.{{table.name}}, err = New{{full_name table}}(buf) ; err != nil {
+        msg := "Luban Build Table:{{table.name}} error"
+        err = errors.Wrap(err, msg)
         return nil, err
     }
     {{~end~}}
