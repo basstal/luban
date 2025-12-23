@@ -2,6 +2,10 @@
 package {{__namespace}};
 {{~end~}}
 
+import (
+	"fmt"
+)
+
 type JsonLoader func(string) ([]map[string]interface{}, error)
 
 type {{__name}} struct {
@@ -20,8 +24,7 @@ func NewTables(loader JsonLoader) (*{{__name}}, error) {
         return nil, err
     }
     if tables.{{table.name}}, err = New{{full_name table}}(buf) ; err != nil {
-        msg := "Luban Build Table:{{table.name}} error"
-        err = errors.Wrap(err, msg)
+    	err = fmt.Errorf("Luban Build Table:{{table.name}} error:%s", err.Error())
         return nil, err
     }
     {{~end~}}
