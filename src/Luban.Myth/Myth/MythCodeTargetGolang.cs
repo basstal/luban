@@ -91,84 +91,87 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
         public List<string> BodyLines { get; set; }
     }
 
-    private bool HandlePlaceHolderNode_Go(List<MythExprNode> nodes, GenerationContext ctx)
+    private bool HandlePlaceHolderNode(List<MythExprNode> nodes, GenerationContext ctx)
     {
+        bool hasPlaceHolder = false;
         foreach (var node in nodes)
         {
-            if (node is PlaceHolderNode placeHolderNode)
+            if (HandlePlaceHolderNodeRecursive(node, ctx))
             {
-                var splitContent = placeHolderNode.OriginalValue.Split('.');
-                var defineTable = ctx.ExportTables.Find(table => table.ValueType == splitContent[0]);
-                var defineField = defineTable.ValueTType.DefBean.ExportFields.Find(field => field.Name == splitContent[1]);
-                // Assuming Go `Tables` struct has PascalCase fields for each table.
-                placeHolderNode.OutputValue = $"inExcels.Tables().{TypeUtil.ToPascalCase(defineTable.Name)}.Get().{TypeUtil.ToPascalCase(defineField.Name)}";
-                return true;
-            }
-            else if (node is ArithmeticNode arithmeticNode)
-            {
-                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { arithmeticNode.Left, arithmeticNode.Right }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ComparisonNode comparisonNode)
-            {
-                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { comparisonNode.Left, comparisonNode.Right }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is LogicalNode logicalNode)
-            {
-                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { logicalNode.Left, logicalNode.Right }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is FunctionCallNode functionCallNode)
-            {
-                if (HandlePlaceHolderNode_Go(functionCallNode.Arguments, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ListNode listNode)
-            {
-                if (HandlePlaceHolderNode_Go(listNode.Elements, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is AssignmentNode assignmentNode)
-            {
-                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { assignmentNode.Target, assignmentNode.Value }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ReturnNode returnNode)
-            {
-                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { returnNode.Value }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is CastExpressionNode castExpressionNode)
-            {
-                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { castExpressionNode.Expression }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ConditionalExpressionNode conditionalExpressionNode)
-            {
-                if (HandlePlaceHolderNode_Go(new List<MythExprNode> { conditionalExpressionNode.Condition, conditionalExpressionNode.ThenExpr, conditionalExpressionNode.ElseExpr }, ctx))
-                {
-                    return true;
-                }
+                hasPlaceHolder = true;
             }
         }
-        return false;
+        return hasPlaceHolder;
+    }
+
+    private bool HandlePlaceHolderNodeRecursive(MythExprNode? node, GenerationContext ctx)
+    {
+        if (node == null)
+        {
+            return false;
+        }
+        bool found = false;
+        switch (node)
+        {
+            case PlaceHolderNode placeHolderNode:
+                var splitContent = placeHolderNode.OriginalValue.Split('.');
+                if (splitContent.Length < 2)
+                {
+                    return false;
+                }
+                var defineTable = ctx.ExportTables.Find(table => table.ValueType == splitContent[0]);
+                if (defineTable == null)
+                {
+                    return false;
+                }
+                var defineField = defineTable.ValueTType.DefBean.ExportFields.Find(field => field.Name == splitContent[1]);
+                if (defineField == null)
+                {
+                    return false;
+                }
+                placeHolderNode.OutputValue = $"inExcels.Tables().{TypeUtil.ToPascalCase(defineTable.Name)}.Get().{TypeUtil.ToPascalCase(defineField.Name)}";
+                return true;
+            case ArithmeticNode arithmeticNode:
+                found |= HandlePlaceHolderNodeRecursive(arithmeticNode.Left, ctx);
+                found |= HandlePlaceHolderNodeRecursive(arithmeticNode.Right, ctx);
+                break;
+            case ComparisonNode comparisonNode:
+                found |= HandlePlaceHolderNodeRecursive(comparisonNode.Left, ctx);
+                found |= HandlePlaceHolderNodeRecursive(comparisonNode.Right, ctx);
+                break;
+            case LogicalNode logicalNode:
+                found |= HandlePlaceHolderNodeRecursive(logicalNode.Left, ctx);
+                found |= HandlePlaceHolderNodeRecursive(logicalNode.Right, ctx);
+                break;
+            case FunctionCallNode functionCallNode:
+                foreach (var arg in functionCallNode.Arguments)
+                {
+                    found |= HandlePlaceHolderNodeRecursive(arg, ctx);
+                }
+                break;
+            case ListNode listNode:
+                foreach (var element in listNode.Elements)
+                {
+                    found |= HandlePlaceHolderNodeRecursive(element, ctx);
+                }
+                break;
+            case AssignmentNode assignmentNode:
+                found |= HandlePlaceHolderNodeRecursive(assignmentNode.Target, ctx);
+                found |= HandlePlaceHolderNodeRecursive(assignmentNode.Value, ctx);
+                break;
+            case ReturnNode returnNode:
+                found |= HandlePlaceHolderNodeRecursive(returnNode.Value, ctx);
+                break;
+            case CastExpressionNode castExpressionNode:
+                found |= HandlePlaceHolderNodeRecursive(castExpressionNode.Expression, ctx);
+                break;
+            case ConditionalExpressionNode conditionalExpressionNode:
+                found |= HandlePlaceHolderNodeRecursive(conditionalExpressionNode.Condition, ctx);
+                found |= HandlePlaceHolderNodeRecursive(conditionalExpressionNode.ThenExpr, ctx);
+                found |= HandlePlaceHolderNodeRecursive(conditionalExpressionNode.ElseExpr, ctx);
+                break;
+        }
+        return found;
     }
 
     public OutputFile GenerateMythExpression(GenerationContext ctx, IMythCodeGenerator mythCodeGenerator)
@@ -187,7 +190,7 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
                 Parameters = string.Join(", ", functionBody.Signature.Parameters.Select(p => p.VariableSignature + " " + MythTypeUtil.MythValueTypeToGoStringNoFloat(p.Type)).ToList()),
             };
 
-            if (HandlePlaceHolderNode_Go(functionBody.ParsedBodyLines, ctx))
+            if (HandlePlaceHolderNode(functionBody.ParsedBodyLines, ctx))
             {
                 needImportTables = true;
                 var tableParam = $"inExcels *excels.Excels";

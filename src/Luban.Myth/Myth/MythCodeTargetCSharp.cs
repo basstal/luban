@@ -99,81 +99,85 @@ public class MythCodeTemplateTargetCSharp : CsharpCodeTargetBase, IMythCodeTempl
 
     private bool HandlePlaceHolderNode(List<MythExprNode> nodes, GenerationContext ctx)
     {
+        bool hasPlaceHolder = false;
         foreach (var node in nodes)
         {
-            if (node is PlaceHolderNode placeHolderNode)
+            if (HandlePlaceHolderNodeRecursive(node, ctx))
             {
-                var splitContent = placeHolderNode.OriginalValue.Split(".");
-                var defineTable = ctx.ExportTables.Find(table => table.ValueType == splitContent[0]);
-                var defineField = defineTable.ValueTType.DefBean.ExportFields.Find(field => field.Name == splitContent[1]);
-                placeHolderNode.OutputValue = $"inTables.{defineTable.Name}.{TypeUtil.ToCsStyleName(defineField.Name)}";
-                return true;
-            }
-            else if (node is ArithmeticNode arithmeticNode)
-            {
-                if (HandlePlaceHolderNode(new List<MythExprNode> { arithmeticNode.Left, arithmeticNode.Right }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ComparisonNode comparisonNode)
-            {
-                if (HandlePlaceHolderNode(new List<MythExprNode> { comparisonNode.Left, comparisonNode.Right }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is LogicalNode logicalNode)
-            {
-                if (HandlePlaceHolderNode(new List<MythExprNode> { logicalNode.Left, logicalNode.Right }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is FunctionCallNode functionCallNode)
-            {
-                if (HandlePlaceHolderNode(functionCallNode.Arguments, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ListNode listNode)
-            {
-                if (HandlePlaceHolderNode(listNode.Elements, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is AssignmentNode assignmentNode)
-            {
-                if (HandlePlaceHolderNode(new List<MythExprNode> { assignmentNode.Target, assignmentNode.Value }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ReturnNode returnNode)
-            {
-                if (HandlePlaceHolderNode(new List<MythExprNode> { returnNode.Value }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is CastExpressionNode castExpressionNode)
-            {
-                if (HandlePlaceHolderNode(new List<MythExprNode> { castExpressionNode.Expression }, ctx))
-                {
-                    return true;
-                }
-            }
-            else if (node is ConditionalExpressionNode conditionalExpressionNode)
-            {
-                if (HandlePlaceHolderNode(new List<MythExprNode> { conditionalExpressionNode.Condition, conditionalExpressionNode.ThenExpr, conditionalExpressionNode.ElseExpr }, ctx))
-                {
-                    return true;
-                }
+                hasPlaceHolder = true;
             }
         }
-        return false;
+        return hasPlaceHolder;
+    }
+
+    private bool HandlePlaceHolderNodeRecursive(MythExprNode? node, GenerationContext ctx)
+    {
+        if (node == null)
+        {
+            return false;
+        }
+        bool found = false;
+        switch (node)
+        {
+            case PlaceHolderNode placeHolderNode:
+                var splitContent = placeHolderNode.OriginalValue.Split('.');
+                if (splitContent.Length < 2)
+                {
+                    return false;
+                }
+                var defineTable = ctx.ExportTables.Find(table => table.ValueType == splitContent[0]);
+                if (defineTable == null)
+                {
+                    return false;
+                }
+                var defineField = defineTable.ValueTType.DefBean.ExportFields.Find(field => field.Name == splitContent[1]);
+                if (defineField == null)
+                {
+                    return false;
+                }
+                placeHolderNode.OutputValue = $"inTables.{defineTable.Name}.{TypeUtil.ToCsStyleName(defineField.Name)}";
+                return true;
+            case ArithmeticNode arithmeticNode:
+                found |= HandlePlaceHolderNodeRecursive(arithmeticNode.Left, ctx);
+                found |= HandlePlaceHolderNodeRecursive(arithmeticNode.Right, ctx);
+                break;
+            case ComparisonNode comparisonNode:
+                found |= HandlePlaceHolderNodeRecursive(comparisonNode.Left, ctx);
+                found |= HandlePlaceHolderNodeRecursive(comparisonNode.Right, ctx);
+                break;
+            case LogicalNode logicalNode:
+                found |= HandlePlaceHolderNodeRecursive(logicalNode.Left, ctx);
+                found |= HandlePlaceHolderNodeRecursive(logicalNode.Right, ctx);
+                break;
+            case FunctionCallNode functionCallNode:
+                foreach (var arg in functionCallNode.Arguments)
+                {
+                    found |= HandlePlaceHolderNodeRecursive(arg, ctx);
+                }
+                break;
+            case ListNode listNode:
+                foreach (var element in listNode.Elements)
+                {
+                    found |= HandlePlaceHolderNodeRecursive(element, ctx);
+                }
+                break;
+            case AssignmentNode assignmentNode:
+                found |= HandlePlaceHolderNodeRecursive(assignmentNode.Target, ctx);
+                found |= HandlePlaceHolderNodeRecursive(assignmentNode.Value, ctx);
+                break;
+            case ReturnNode returnNode:
+                found |= HandlePlaceHolderNodeRecursive(returnNode.Value, ctx);
+                break;
+            case CastExpressionNode castExpressionNode:
+                found |= HandlePlaceHolderNodeRecursive(castExpressionNode.Expression, ctx);
+                break;
+            case ConditionalExpressionNode conditionalExpressionNode:
+                found |= HandlePlaceHolderNodeRecursive(conditionalExpressionNode.Condition, ctx);
+                found |= HandlePlaceHolderNodeRecursive(conditionalExpressionNode.ThenExpr, ctx);
+                found |= HandlePlaceHolderNodeRecursive(conditionalExpressionNode.ElseExpr, ctx);
+                break;
+        }
+        return found;
     }
     public OutputFile GenerateMythExpression(GenerationContext ctx, IMythCodeGenerator mythCodeGenerator)
     {
