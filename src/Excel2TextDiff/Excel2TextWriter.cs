@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Excel2TextDiff
 {
-    class Excel2TextWriter
+    public class Excel2TextWriter
     {
         public void TransformToTextAndSave(string excelFile, string outputTextFile)
         {

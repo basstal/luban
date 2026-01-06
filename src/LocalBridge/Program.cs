@@ -155,6 +155,19 @@ app.MapPost("/api/diff/run", async (DiffRequest req) =>
     }
 });
 
+app.MapPost("/api/diff/run2", async (DiffRequest2 req) =>
+{
+    try
+    {
+        await DiffManager.RunExcelDiff(req.xlsxPath);
+        return Results.Ok(new { ok = true });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 // 只绑定 127.0.0.1，避免被局域网访问
 app.Urls.Clear();
 app.Urls.Add("http://127.0.0.1:18123");
@@ -176,3 +189,5 @@ record FindSchemaRequest(string fileName);
 record TypeOptionsRequest(string typeFullName);
 
 record DiffRequest(string fileName);
+
+record DiffRequest2(string xlsxPath);
