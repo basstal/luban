@@ -53,7 +53,7 @@ public class SimpleLauncher
         foreach (var dllFile in Directory.GetFiles(dllDir, "*.dll", SearchOption.TopDirectoryOnly))
         {
             string dllName = Path.GetFileNameWithoutExtension(dllFile);
-            if (dllName.Contains("Luban") && AppDomain.CurrentDomain.GetAssemblies().All(a => a.GetName().Name != dllName))
+            if (dllName.Contains("Luban.") && AppDomain.CurrentDomain.GetAssemblies().All(a => a.GetName().Name != dllName))
             {
                 s_logger.Debug("load dll:{dll}", dllFile);
                 Assembly.Load(dllName);
