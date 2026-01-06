@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luban.Myth", "Luban.Myth\Lu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalBridge", "LocalBridge\LocalBridge.csproj", "{98EE1C70-C871-4FBB-AE15-3234ADBA87F9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excel2TextDiff", "Excel2TextDiff\Excel2TextDiff.csproj", "{35ED35FA-03CD-49DE-B0E6-7ACBF4D6FB2C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -147,6 +149,10 @@ Global
 		{98EE1C70-C871-4FBB-AE15-3234ADBA87F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98EE1C70-C871-4FBB-AE15-3234ADBA87F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98EE1C70-C871-4FBB-AE15-3234ADBA87F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35ED35FA-03CD-49DE-B0E6-7ACBF4D6FB2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35ED35FA-03CD-49DE-B0E6-7ACBF4D6FB2C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35ED35FA-03CD-49DE-B0E6-7ACBF4D6FB2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35ED35FA-03CD-49DE-B0E6-7ACBF4D6FB2C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

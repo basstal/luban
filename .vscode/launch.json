@@ -67,6 +67,23 @@
             "stopAtEntry": false
         },
         {
+            "name": "LocalBridge",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/LocalBridge/bin/Debug/net8.0/LocalBridge.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/LocalBridge",
+            "stopAtEntry": false,
+            // "serverReadyAction": {
+            //     "action": "openExternally",
+            //     "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            // },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach"

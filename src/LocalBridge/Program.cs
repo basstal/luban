@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Luban;
+using Luban.Defs;
+using System.IO;
+using LocalBridge;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +88,73 @@ app.MapGet("/api/info", () =>
     });
 });
 
+app.MapPost("/api/schema/find", (FindSchemaRequest req) =>
+{
+    if (GenerationContext.Current == null)
+    {
+        return Results.Problem("GenerationContext not initialized. Please call /health first.");
+    }
+
+    var fileName = Path.GetFileName(req.fileName);
+    var table = GenerationContext.Current.Tables.FirstOrDefault(t =>
+        t.InputFiles.Any(f => Path.GetFileName(f).Equals(fileName, StringComparison.OrdinalIgnoreCase)));
+
+    if (table == null)
+    {
+        return Results.NotFound(new { ok = false, message = $"Table for file '{req.fileName}' not found." });
+    }
+
+    var fields = table.ValueTType.DefBean.HierarchyFields.Select(f => new
+    {
+        name = f.Name,
+        isOptionType = TypeOptionsManager.IsOptionType(f.CType),
+        typeFullName = TypeOptionsManager.GetTypeFullName(f.CType),
+        comment = f.Comment
+    }).ToList();
+    var tableInfo = new
+    {
+        fullName = table.FullName,
+        name = table.Name,
+        @namespace = table.Namespace,
+        mode = table.Mode.ToString(),
+        inputFiles = table.InputFiles,
+        fields = fields
+    };
+    return Results.Ok(new
+    {
+        ok = true,
+        table = tableInfo
+    });
+});
+
+app.MapPost("/api/type/options", (TypeOptionsRequest req) =>
+{
+    if (GenerationContext.Current == null)
+    {
+        return Results.Problem("GenerationContext not initialized. Please call /health first.");
+    }
+
+    var options = TypeOptionsManager.GetOptions(req.typeFullName);
+    return Results.Ok(new
+    {
+        ok = true,
+        options = options
+    });
+});
+
+app.MapPost("/api/diff/run", async (DiffRequest req) =>
+{
+    try
+    {
+        await DiffManager.RunDiff(req.fileName);
+        return Results.Ok(new { ok = true });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 // 只绑定 127.0.0.1，避免被局域网访问
 app.Urls.Clear();
 app.Urls.Add("http://127.0.0.1:18123");
@@ -99,3 +170,9 @@ record EchoResponse
 }
 
 record DoSomethingRequest(string action, string? payload);
+
+record FindSchemaRequest(string fileName);
+
+record TypeOptionsRequest(string typeFullName);
+
+record DiffRequest(string fileName);

@@ -36,7 +36,7 @@ public class LocalBridgePipeline : IPipeline
         _args = args;
         LoadSchema();
         PrepareGenerationContext();
-        // ProcessTargets();
+        ProcessTargets();
     }
 
     protected void LoadSchema()
@@ -112,17 +112,17 @@ public class LocalBridgePipeline : IPipeline
             LoadDatas();
         }
 
-        if (_args.DataTargets.Count > 0)
-        {
-            string dataExporterName = EnvManager.Current.GetOptionOrDefault("", BuiltinOptionNames.DataExporter, true, "default");
-            s_logger.Debug("dataExporter: {}", dataExporterName);
-            IDataExporter dataExporter = DataTargetManager.Ins.CreateDataExporter(dataExporterName);
-            foreach (string mission in _args.DataTargets)
-            {
-                IDataTarget dataTarget = DataTargetManager.Ins.CreateDataTarget(mission);
-                tasks.Add(Task.Run(() => ProcessDataTarget(mission, dataExporter, dataTarget)));
-            }
-        }
+        // if (_args.DataTargets.Count > 0)
+        // {
+        //     string dataExporterName = EnvManager.Current.GetOptionOrDefault("", BuiltinOptionNames.DataExporter, true, "default");
+        //     s_logger.Debug("dataExporter: {}", dataExporterName);
+        //     IDataExporter dataExporter = DataTargetManager.Ins.CreateDataExporter(dataExporterName);
+        //     foreach (string mission in _args.DataTargets)
+        //     {
+        //         IDataTarget dataTarget = DataTargetManager.Ins.CreateDataTarget(mission);
+        //         tasks.Add(Task.Run(() => ProcessDataTarget(mission, dataExporter, dataTarget)));
+        //     }
+        // }
         Task.WaitAll(tasks.ToArray());
     }
 

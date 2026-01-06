@@ -7,6 +7,9 @@ using NLog;
 using System.Text;
 using Luban;
 
+
+namespace LocalBridge;
+
 public static class RuntimeEnvironment
 {
     private class CommandOptions
