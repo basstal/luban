@@ -100,13 +100,16 @@ namespace LocalBridge
             }
         }
 
-        private static string MapValueType(MythValueType type)
+        public static string MapValueType(MythValueType type)
         {
             return type switch
             {
                 MythValueType.Int => "Int",
                 MythValueType.IntTenThousandth => "RatioInt",
                 MythValueType.Bool => "Bool",
+                MythValueType.String => "String",
+                MythValueType.Float => "Float",
+                MythValueType.Enum => "Enum",
                 _ => "Int" // Default
             };
         }

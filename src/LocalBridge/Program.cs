@@ -242,6 +242,36 @@ app.MapPost("/api/rule/serialize", (SerializeRuleRequest req) =>
     }
 });
 
+app.MapGet("/api/rule/schema", () =>
+{
+    try
+    {
+        var functions = Myth.MythFunctionTable.Signatures.Values.Select(s => new
+        {
+            funcKey = s.Name,
+            name = s.Name,
+            @params = s.Parameters.Select(p => new
+            {
+                type = RuleAstConverter.MapValueType(p.Type),
+                lubanType = p.LubanTypeReference,
+                name = p.VariableSignature
+            }).ToList(),
+            returnType = RuleAstConverter.MapValueType(s.ReturnType),
+            isParams = s.IsParams
+        }).ToList();
+
+        return Results.Ok(new
+        {
+            ok = true,
+            functions = functions
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 // 只绑定 127.0.0.1，避免被局域网访问
 app.Urls.Clear();
 app.Urls.Add("http://127.0.0.1:18123");
