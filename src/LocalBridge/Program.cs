@@ -119,6 +119,8 @@ app.MapPost("/api/schema/find", (FindSchemaRequest req) =>
     {
         name = f.Name,
         isOptionType = TypeOptionsManager.IsOptionType(f.CType),
+        isRefType = TypeRefManager.IsRefType(f.CType),
+        refTableName = TypeRefManager.GetRefTableFullName(f.CType),
         typeFullName = TypeOptionsManager.GetTypeFullName(f.CType),
         isContainerType = TypeOptionsManager.IsContainerType(f.CType),
         comment = f.Comment
@@ -242,6 +244,65 @@ app.MapPost("/api/rule/serialize", (SerializeRuleRequest req) =>
     }
 });
 
+app.MapPost("/api/table/records", (TableRecordsRequest req) =>
+{
+    try
+    {
+        if (GenerationContext.Current == null)
+        {
+            return Results.Problem("生成上下文未初始化。请先调用 /health 接口。");
+        }
+
+        var table = GenerationContext.Current.Tables.FirstOrDefault(t => t.FullName.Equals(req.tableName, StringComparison.OrdinalIgnoreCase));
+        if (table == null)
+        {
+            // 尝试不带模块名的匹配，有些地方可能只传了 TbXXX
+            table = GenerationContext.Current.Tables.FirstOrDefault(t => t.Name.Equals(req.tableName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (table == null)
+        {
+            return Results.NotFound(new { ok = false, message = $"未找到表 '{req.tableName}'。" });
+        }
+
+        var records = GenerationContext.Current.GetTableAllDataList(table);
+        var keys = new List<object>();
+
+        if (table.IndexList.Count == 1)
+        {
+            var indexInfo = table.IndexList[0];
+            foreach (var record in records)
+            {
+                var dType = record.Data.Fields[indexInfo.IndexFieldIdIndex];
+                object value = dType switch
+                {
+                    Luban.Datas.DInt di => di.Value,
+                    Luban.Datas.DLong dl => dl.Value,
+                    Luban.Datas.DString ds => ds.Value,
+                    Luban.Datas.DEnum de => de.Value,
+                    Luban.Datas.DBool db => db.Value,
+                    _ => dType.ToString()
+                };
+                keys.Add(value);
+            }
+        }
+        else if (table.IndexList.Count > 1)
+        {
+            // TODO: 预留多主键处理，目前返回空列表
+        }
+
+        return Results.Ok(new
+        {
+            ok = true,
+            keys = keys
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 app.MapGet("/api/rule/schema", () =>
 {
     try
@@ -299,5 +360,7 @@ record DiffRequest2(string xlsxPath);
 record ParseRuleRequest(string dsl);
 
 record SerializeRuleRequest(System.Text.Json.JsonElement ast);
+
+record TableRecordsRequest(string tableName);
 
 record HealthRequest(string projectRootDir);
