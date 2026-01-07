@@ -8,9 +8,9 @@ namespace LocalBridge;
 
 public class TypeOption
 {
-    public string Value { get; set; }
-    public string Label { get; set; }
-    public string Comment { get; set; }
+    public string Value { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Comment { get; set; } = string.Empty;
 }
 
 public interface ITypeOptionsProvider
@@ -72,11 +72,42 @@ public class TypeOptionsManager
         {
             return false;
         }
-        else if (type.IsEnum && type is TEnum tenum)
+
+        if (type.IsEnum && type is TEnum tenum)
         {
             return _providers.Any(p => p.CanHandle(tenum.DefEnum.FullName));
         }
+
+        if (type is TArray array)
+        {
+            return IsOptionType(array.ElementType);
+        }
+
+        if (type is TList list)
+        {
+            return IsOptionType(list.ElementType);
+        }
+
+        if (type is TSet set)
+        {
+            return IsOptionType(set.ElementType);
+        }
+
+        if (type is TMap map)
+        {
+            return IsOptionType(map.KeyType) || IsOptionType(map.ValueType);
+        }
+
         return false;
+    }
+
+    public static bool IsContainerType(TType type)
+    {
+        if (type == null)
+        {
+            return false;
+        }
+        return type is TArray || type is TList || type is TSet;
     }
 
     public static string GetTypeFullName(TType type)
@@ -85,10 +116,39 @@ public class TypeOptionsManager
         {
             return string.Empty;
         }
-        else if (type.IsEnum && type is TEnum tenum)
+
+        if (type.IsEnum && type is TEnum tenum)
         {
             return tenum.DefEnum.FullName;
         }
+
+        if (type is TArray array)
+        {
+            return GetTypeFullName(array.ElementType);
+        }
+
+        if (type is TList list)
+        {
+            return GetTypeFullName(list.ElementType);
+        }
+
+        if (type is TSet set)
+        {
+            return GetTypeFullName(set.ElementType);
+        }
+
+        if (type is TMap map)
+        {
+            if (IsOptionType(map.ValueType))
+            {
+                return GetTypeFullName(map.ValueType);
+            }
+            if (IsOptionType(map.KeyType))
+            {
+                return GetTypeFullName(map.KeyType);
+            }
+        }
+
         return type.TypeName;
     }
 

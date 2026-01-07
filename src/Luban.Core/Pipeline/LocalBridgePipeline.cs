@@ -96,16 +96,16 @@ public class LocalBridgePipeline : IPipeline
 
     protected void ProcessTargets()
     {
-        var tasks = new List<Task>();
-        tasks.Add(Task.Run(() =>
-        {
-            foreach (string target in _args.CodeTargets)
-            {
-                // code target doesn't support run in parallel
-                ICodeTarget m = CodeTargetManager.Ins.CreateCodeTarget(target);
-                ProcessCodeTarget(target, m);
-            }
-        }));
+        // var tasks = new List<Task>();
+        // tasks.Add(Task.Run(() =>
+        // {
+        //     foreach (string target in _args.CodeTargets)
+        //     {
+        //         // code target doesn't support run in parallel
+        //         ICodeTarget m = CodeTargetManager.Ins.CreateCodeTarget(target);
+        //         ProcessCodeTarget(target, m);
+        //     }
+        // }));
 
         if (_args.ForceLoadTableDatas || _args.DataTargets.Count > 0)
         {
@@ -123,7 +123,7 @@ public class LocalBridgePipeline : IPipeline
         //         tasks.Add(Task.Run(() => ProcessDataTarget(mission, dataExporter, dataTarget)));
         //     }
         // }
-        Task.WaitAll(tasks.ToArray());
+        // Task.WaitAll(tasks.ToArray());
     }
 
     protected void ProcessCodeTarget(string name, ICodeTarget codeTarget)

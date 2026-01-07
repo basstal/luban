@@ -23,36 +23,47 @@ var app = builder.Build();
 app.UseCors("wps");
 
 // 探活：用于 WPS 端显示绿/灰
-app.MapGet("/health", () =>
+app.MapPost("/health", (HealthRequest req) =>
 {
-    var projectRootDir = "C://FD2//trunk";
-    var args = new string[] {
-        "-t",
-        "client",
-        "-c",
-        "cs-simple-json",
-        "-d",
-        "json",
-        "--config",
-        $"{projectRootDir}\\Externals\\luban\\luban.conf",
-        "-x",
-        $"outputDataDir={projectRootDir}\\Client\\Assets\\FD2\\AssetBundle\\Data\\Json",
-        $"outputCodeDir={projectRootDir}\\Client\\Assets\\FD2\\Scripts\\Generated\\LubanEditor\\Code",
-        "l10n.provider=default",
-        $"l10n.textFile.path={projectRootDir}\\Externals\\xlsx\\TextInfo.xlsx",
-        "l10n.textFile.keyFieldName=key",
-        "dataExporter=myth",
-        $"mythConfig={projectRootDir}\\Externals\\luban\\temp\\ClientMythConfig.json",
-        $"pathValidator.rootDir={projectRootDir}\\Client\\Assets\\FD2\\AssetBundle"
-    };
-    RuntimeEnvironment.Initialize(args);
-    return Results.Ok(new
+    try
     {
-        ok = true,
-        name = "WpsLocalBridge",
-        version = "1.0.0",
-        serverTime = DateTimeOffset.Now
-    });
+        var projectRootDir = req.projectRootDir;
+        if (!Directory.Exists(projectRootDir))
+        {
+            return Results.Problem($"未找到项目根目录：{projectRootDir}。");
+        }
+        var args = new string[] {
+            "-t",
+            "client",
+            "-c",
+            "cs-simple-json",
+            "-d",
+            "json",
+            "--config",
+            $"{projectRootDir}\\Externals\\luban\\luban.conf",
+            "-x",
+            $"outputDataDir={projectRootDir}\\Client\\Assets\\FD2\\AssetBundle\\Data\\Json",
+            $"outputCodeDir={projectRootDir}\\Client\\Assets\\FD2\\Scripts\\Generated\\LubanEditor\\Code",
+            "l10n.provider=default",
+            $"l10n.textFile.path={projectRootDir}\\Externals\\xlsx\\TextInfo.xlsx",
+            "l10n.textFile.keyFieldName=key",
+            "dataExporter=myth",
+            $"mythConfig={projectRootDir}\\Externals\\luban\\temp\\ClientMythConfig.json",
+            $"pathValidator.rootDir={projectRootDir}\\Client\\Assets\\FD2\\AssetBundle"
+        };
+        RuntimeEnvironment.Initialize(args);
+        return Results.Ok(new
+        {
+            ok = true,
+            name = "WpsLocalBridge",
+            version = "1.0.0",
+            serverTime = DateTimeOffset.Now
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
 });
 
 // 示例 1：简单 echo（调试用）
@@ -92,7 +103,7 @@ app.MapPost("/api/schema/find", (FindSchemaRequest req) =>
 {
     if (GenerationContext.Current == null)
     {
-        return Results.Problem("GenerationContext not initialized. Please call /health first.");
+        return Results.Problem("生成上下文未初始化。请先调用 /health 接口。");
     }
 
     var fileName = Path.GetFileName(req.fileName);
@@ -101,7 +112,7 @@ app.MapPost("/api/schema/find", (FindSchemaRequest req) =>
 
     if (table == null)
     {
-        return Results.NotFound(new { ok = false, message = $"Table for file '{req.fileName}' not found." });
+        return Results.NotFound(new { ok = false, message = $"未找到文件 '{req.fileName}' 对应的配置表。" });
     }
 
     var fields = table.ValueTType.DefBean.HierarchyFields.Select(f => new
@@ -109,6 +120,7 @@ app.MapPost("/api/schema/find", (FindSchemaRequest req) =>
         name = f.Name,
         isOptionType = TypeOptionsManager.IsOptionType(f.CType),
         typeFullName = TypeOptionsManager.GetTypeFullName(f.CType),
+        isContainerType = TypeOptionsManager.IsContainerType(f.CType),
         comment = f.Comment
     }).ToList();
     var tableInfo = new
@@ -131,7 +143,7 @@ app.MapPost("/api/type/options", (TypeOptionsRequest req) =>
 {
     if (GenerationContext.Current == null)
     {
-        return Results.Problem("GenerationContext not initialized. Please call /health first.");
+        return Results.Problem("生成上下文未初始化。请先调用 /health 接口。");
     }
 
     var options = TypeOptionsManager.GetOptions(req.typeFullName);
@@ -191,3 +203,5 @@ record TypeOptionsRequest(string typeFullName);
 record DiffRequest(string fileName);
 
 record DiffRequest2(string xlsxPath);
+
+record HealthRequest(string projectRootDir);
