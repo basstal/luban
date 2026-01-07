@@ -220,6 +220,28 @@ app.MapPost("/api/rule/parse", (ParseRuleRequest req) =>
     }
 });
 
+app.MapPost("/api/rule/serialize", (SerializeRuleRequest req) =>
+{
+    try
+    {
+        if (req.ast.ValueKind == System.Text.Json.JsonValueKind.Undefined || req.ast.ValueKind == System.Text.Json.JsonValueKind.Null)
+        {
+            return Results.BadRequest(new { ok = false, message = "AST 不能为空。" });
+        }
+
+        string dsl = RuleAstConverter.Serialize(req.ast);
+        return Results.Ok(new
+        {
+            ok = true,
+            dsl = dsl
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 // 只绑定 127.0.0.1，避免被局域网访问
 app.Urls.Clear();
 app.Urls.Add("http://127.0.0.1:18123");
@@ -245,5 +267,7 @@ record DiffRequest(string fileName);
 record DiffRequest2(string xlsxPath);
 
 record ParseRuleRequest(string dsl);
+
+record SerializeRuleRequest(System.Text.Json.JsonElement ast);
 
 record HealthRequest(string projectRootDir);
