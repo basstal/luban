@@ -180,6 +180,46 @@ app.MapPost("/api/diff/run2", async (DiffRequest2 req) =>
     }
 });
 
+app.MapPost("/api/rule/parse", (ParseRuleRequest req) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(req.dsl))
+        {
+            return Results.BadRequest(new { ok = false, message = "DSL 不能为空。" });
+        }
+
+        Myth.MythLexer lexer = new Myth.MythLexer(req.dsl);
+        var tokens = lexer.Tokenize();
+        var parser = new Myth.MythParser(tokens);
+        Myth.MythExprNode ast = parser.ParseExpression();
+
+        // 语义分析可能需要已初始化的 MythFunctionTable
+        try
+        {
+            ast = Myth.MythSemanticAnalyzer.AnalyzeAST(ast);
+        }
+        catch (Exception ex)
+        {
+            // 如果语义分析失败（例如函数未定义），我们仍然尝试返回基础 AST，
+            // 或者在这里处理错误。为了保证解析能跑通，如果语义分析报错，
+            // 我们可以选择继续使用原始 AST，但某些类型信息可能会缺失。
+            Console.WriteLine($"语义分析警告: {ex.Message}");
+        }
+
+        var result = RuleAstConverter.Convert(ast);
+        return Results.Ok(new
+        {
+            ok = true,
+            ast = result
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 // 只绑定 127.0.0.1，避免被局域网访问
 app.Urls.Clear();
 app.Urls.Add("http://127.0.0.1:18123");
@@ -203,5 +243,7 @@ record TypeOptionsRequest(string typeFullName);
 record DiffRequest(string fileName);
 
 record DiffRequest2(string xlsxPath);
+
+record ParseRuleRequest(string dsl);
 
 record HealthRequest(string projectRootDir);
