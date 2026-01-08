@@ -56,7 +56,7 @@ app.MapPost("/health", (HealthRequest req) =>
         {
             ok = true,
             name = "WpsLocalBridge",
-            version = "1.0.0",
+            version = "2.0.0",
             serverTime = DateTimeOffset.Now
         });
     }
@@ -112,28 +112,10 @@ app.MapPost("/api/schema/find", (FindSchemaRequest req) =>
 
     if (table == null)
     {
-        return Results.NotFound(new { ok = false, message = $"未找到文件 '{req.fileName}' 对应的配置表。" });
+        return Results.Problem($"未找到文件 '{req.fileName}' 对应的配置表。");
     }
 
-    var fields = table.ValueTType.DefBean.HierarchyFields.Select(f => new
-    {
-        name = f.Name,
-        isOptionType = TypeOptionsManager.IsOptionType(f.CType),
-        isRefType = TypeRefManager.IsRefType(f.CType),
-        refTableName = TypeRefManager.GetRefTableFullName(f.CType),
-        typeFullName = TypeOptionsManager.GetTypeFullName(f.CType),
-        isContainerType = TypeOptionsManager.IsContainerType(f.CType),
-        comment = f.Comment
-    }).ToList();
-    var tableInfo = new
-    {
-        fullName = table.FullName,
-        name = table.Name,
-        @namespace = table.Namespace,
-        mode = table.Mode.ToString(),
-        inputFiles = table.InputFiles,
-        fields = fields
-    };
+    var tableInfo = SchemaInfoManager.GetTableInfo(table);
     return Results.Ok(new
     {
         ok = true,
@@ -262,10 +244,15 @@ app.MapPost("/api/table/records", (TableRecordsRequest req) =>
 
         if (table == null)
         {
-            return Results.NotFound(new { ok = false, message = $"未找到表 '{req.tableName}'。" });
+            return Results.Problem($"未找到表 '{req.tableName}'。");
         }
 
-        var records = GenerationContext.Current.GetTableAllDataList(table);
+        if (!GenerationContext.Current.RecordsByTables.TryGetValue(table.FullName, out var tableDataInfo))
+        {
+            return Results.Problem($"表 '{req.tableName}' 数据未加载。");
+        }
+        var records = tableDataInfo.FinalRecords;
+
         var keys = new List<object>();
 
         if (table.IndexList.Count == 1)
@@ -291,10 +278,12 @@ app.MapPost("/api/table/records", (TableRecordsRequest req) =>
             // TODO: 预留多主键处理，目前返回空列表
         }
 
+        var firstInputFilePath = Path.Combine(GenerationContext.GetInputDataPath(), table.InputFiles.FirstOrDefault());
         return Results.Ok(new
         {
             ok = true,
-            keys = keys
+            keys = keys,
+            filePath = firstInputFilePath
         });
     }
     catch (Exception ex)

@@ -46,6 +46,8 @@ public class GenerationContext
 
     private readonly ConcurrentDictionary<string, TableDataInfo> _recordsByTables = new();
 
+    public ConcurrentDictionary<string, TableDataInfo> RecordsByTables => _recordsByTables;
+
     public string TopModule => Target.TopModule;
 
     public List<DefTable> Tables => Assembly.GetAllTables();

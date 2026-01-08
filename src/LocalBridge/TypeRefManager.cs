@@ -91,7 +91,7 @@ public class TypeRefManager
 
         if (Luban.GenerationContext.Current == null)
         {
-            return refName;
+            return refName.TrimEnd('?');
         }
 
         // 尝试解析为完整的表名
@@ -103,7 +103,8 @@ public class TypeRefManager
             table = tables.FirstOrDefault(t => t.Name.Equals(refName, StringComparison.OrdinalIgnoreCase));
         }
 
-        return table?.FullName ?? refName;
+        var result = table?.FullName ?? refName;
+        return result.TrimEnd('?');
     }
 }
 
