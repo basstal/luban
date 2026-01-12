@@ -44,6 +44,8 @@ public class SchemaInfoManager
             ["isRefType"] = TypeRefManager.IsRefType(type),
             ["refTableName"] = TypeRefManager.GetRefTableFullName(type),
             ["isContainerType"] = TypeOptionsManager.IsContainerType(type),
+            ["isMythContent"] = f.HasTag("IsMythContent"),
+            ["isMythNoRpn"] = f.HasTag("MythNoRpn"),
         };
 
         // 尝试获取 Bean 类型（直接是 Bean 或 容器内的元素是 Bean）
