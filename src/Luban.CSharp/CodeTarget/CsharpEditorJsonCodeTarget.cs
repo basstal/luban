@@ -52,6 +52,7 @@ public class CsharpEditorJsonCodeTarget : CsharpCodeTargetBase
             { "__top_module", topModule },
             { "__name", bean.Name },
             { "__namespace", bean.Namespace },
+            { "__changeable", bean.HasTag("IsChangeable") },
             { "__namespace_with_top_module", TypeUtil.MakeFullName(topModule, bean.Namespace) },
             { "__full_name_with_top_module", TypeUtil.MakeFullName(topModule, bean.FullName) },
             { "__bean", bean },

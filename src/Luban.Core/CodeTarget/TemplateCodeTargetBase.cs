@@ -161,6 +161,7 @@ public abstract class TemplateCodeTargetBase : CodeTargetBase
             { "__manager_name_with_top_module", TypeUtil.MakeFullName(ctx.TopModule, ctx.Target.Manager) },
             { "__name", bean.Name },
             { "__namespace", bean.Namespace },
+            { "__changeable", bean.HasTag("IsChangeable") },
             { "__namespace_with_top_module", bean.NamespaceWithTopModule },
             { "__full_name_with_top_module", bean.FullNameWithTopModule },
             { "__bean", bean },
