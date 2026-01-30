@@ -158,8 +158,9 @@ public class MythDataExport : DataExporterBase
             var result = new Dictionary<string, (string, string)>();
             // 每一行数据
             var records = ctx.GetTableExportDataList(mythTable);
-            foreach (var record in records)
+            for (int i = 0; i < records.Count; i++)
             {
+                var record = records[i];
                 // 每一个需要转为 expression 的列
                 foreach (var mythFieldPath in mythFieldIndices)
                 {
@@ -173,12 +174,12 @@ public class MythDataExport : DataExporterBase
                     }
 
                     // 根据路径获取最终的 MythContent 值
-                    for (int i = 1; i < mythFieldPath.Length; i++)
+                    for (int j = 1; j < mythFieldPath.Length; j++)
                     {
-                        var nextValue = dBeanField.Fields[mythFieldPath[i]];
+                        var nextValue = dBeanField.Fields[mythFieldPath[j]];
                         if (nextValue is not DBean nextDBean)
                         {
-                            throw new InvalidOperationException($"路径 {string.Join(",", mythFieldPath)} 的第 {i + 1} 个字段不是 DBean 类型");
+                            throw new InvalidOperationException($"路径 {string.Join(",", mythFieldPath)} 的第 {j + 1} 个字段不是 DBean 类型");
                         }
 
                         dBeanField = nextDBean;
@@ -210,16 +211,26 @@ public class MythDataExport : DataExporterBase
                         ast = MythSemanticAnalyzer.AnalyzeAST(ast);
                         // 3. 生成 C# 代码
                         string methodName = CreateMythMethodName(mythTable, record, defField);
+
+                        // 构建验证上下文信息
+                        var validationContext = new MythConverter.ValidationContext
+                        {
+                            TableName = mythTable.InputFiles[0],
+                            FieldName = defField.Name,
+                            RowIndex = i,
+                            Content = dStringMythContent.Value
+                        };
+
                         string code;
                         switch (MythManager.Ins.MythConfig.CodeTarget)
                         {
                             case "csharp":
                                 mythCodeGenerator = new MythCSharpCodeGenerator();
-                                code = mythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
+                                code = mythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx, validationContext);
                                 break;
                             case "golang":
                                 mythCodeGenerator = new MythGolangCodeGenerator();
-                                code = mythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx.ExportEnums);
+                                code = mythCodeGenerator.GenerateMethodCode(methodName, interfaceName, ast, ctx, validationContext);
                                 break;
                             default:
                                 throw new NotImplementedException($"暂不支持的代码目标 {MythManager.Ins.MythConfig.CodeTarget}");

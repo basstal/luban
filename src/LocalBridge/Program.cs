@@ -9,7 +9,7 @@ using LocalBridge;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 离线加载项（file://）常见 Origin: null；这里为“先跑通”放开 CORS
+// 离线加载项（file://）常见 Origin: null；这里为"先跑通"放开 CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("wps", p =>
@@ -22,16 +22,66 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 app.UseCors("wps");
 
+/// <summary>
+/// 检测并返回有效的项目根目录
+/// </summary>
+/// <param name="providedPath">提供的路径，如果为空则自动查找</param>
+/// <returns>有效的项目根目录路径，如果找不到则返回 null</returns>
+static string? DetectProjectRootDir(string? providedPath)
+{
+    // 如果提供了路径，先检查它是否有效
+    if (!string.IsNullOrWhiteSpace(providedPath) && Directory.Exists(providedPath))
+    {
+        var lubanConfPath = Path.Combine(providedPath, "Externals", "luban", "luban.conf");
+        if (File.Exists(lubanConfPath))
+        {
+            return providedPath;
+        }
+    }
+
+    // 从当前程序所在路径向上查找，直到找到 luban.conf 或没有父目录为止
+    var currentPath = AppDomain.CurrentDomain.BaseDirectory;
+    var searchPath = currentPath;
+
+    while (true)
+    {
+        // 检查目录是否存在
+        if (Directory.Exists(searchPath))
+        {
+            // 检查 luban.conf 文件是否存在
+            var lubanConfPath = Path.Combine(searchPath, "Externals", "luban", "luban.conf");
+            if (File.Exists(lubanConfPath))
+            {
+                return searchPath;
+            }
+        }
+
+        // 尝试获取父目录
+        var parent = Directory.GetParent(searchPath);
+        if (parent == null)
+        {
+            // 没有父目录了，停止查找
+            break;
+        }
+        searchPath = parent.FullName;
+    }
+
+    return null;
+}
+
 // 探活：用于 WPS 端显示绿/灰
 app.MapPost("/health", (HealthRequest req) =>
 {
     try
     {
-        var projectRootDir = req.projectRootDir;
-        if (!Directory.Exists(projectRootDir))
+        var projectRootDir = DetectProjectRootDir(req.projectRootDir);
+        if (projectRootDir == null)
         {
-            return Results.Problem($"未找到项目根目录：{projectRootDir}。");
+            return Results.Problem($"无法找到有效的项目根目录。请确保目录存在且包含 Externals\\luban\\luban.conf 文件。");
         }
+
+        Console.WriteLine($"项目根目录 {projectRootDir}");
+
         var args = new string[] {
             "-t",
             "client",

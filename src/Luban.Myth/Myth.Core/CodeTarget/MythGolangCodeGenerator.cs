@@ -1,11 +1,13 @@
 ﻿using Luban.Defs;
+using Luban;
 
 namespace Myth
 {
     public class MythGolangCodeGenerator : IMythCodeGenerator
     {
         public string GolangTopModuleName { get; set; }
-        private List<DefEnum> m_exportEnums;
+        private GenerationContext m_generationContext;
+        private MythConverter.ValidationContext? m_validationContext;
         public string GetEvalContextByFunctionSignature(FunctionSignature functionSignature, string[] argCodes)
         {
             var returnType = functionSignature.ReturnType;
@@ -39,56 +41,108 @@ namespace Myth
                 switch (ln.ValueType)
                 {
                     case MythValueType.Int:
+                    {
+                        // 验证整数有效性
+                        if (!int.TryParse(ln.RawValue, out _))
+                        {
+                            string contextInfo = m_validationContext?.GetContextInfo() ?? "";
+                            throw new ArgumentException($"{contextInfo}无效的整数值: {ln.RawValue}，必须是可以转换为整数的有效数值");
+                        }
+                        if (parent is FunctionCallNode functionCallNode)
+                        {
+                            var functionSignature = functionCallNode.FunctionSignature;
+                            var paramterInfo = nodeIndexFromParent != -1 && nodeIndexFromParent < functionSignature.Parameters.Count ? functionSignature.Parameters[nodeIndexFromParent] : null;
+                            if (paramterInfo != null && !string.IsNullOrEmpty(paramterInfo.LubanTypeReference))
+                            {
+                                // 使用统一的验证函数
+                                var validationResult = MythConverter.ValidateLubanTypeReference(
+                                    paramterInfo.LubanTypeReference,
+                                    ln.RawValue,
+                                    m_generationContext,
+                                    isGolang: true,
+                                    m_validationContext);
+
+                                return validationResult.CodeExpression;
+                            }
+                        }
+
+                        return ln.RawValue; // 直接输出数字
+                    }
                     case MythValueType.Variable:
                     {
-                        return ln.RawValue; // 直接输出数字
+                        // 变量类型，假设是有效的变量名，不进行数值校验
+                        return ln.RawValue;
                     }
                     case MythValueType.Float:
                     {
+                        // 验证浮点数有效性
+                        if (!float.TryParse(ln.RawValue, out var floatVal))
+                        {
+                            string contextInfo = m_validationContext?.GetContextInfo() ?? "";
+                            throw new ArgumentException($"{contextInfo}无效的浮点数值: {ln.RawValue}，必须是可以转换为浮点数的有效数值");
+                        }
                         // 转成万分位整数
-                        return ((int)(float.Parse(ln.RawValue) * 10000)).ToString();
+                        return ((int)(floatVal * 10000)).ToString();
                     }
                     case MythValueType.IntTenThousandth:
                     {
+                        // 验证万分位整数有效性
+                        if (!float.TryParse(ln.RawValue, out var floatVal))
+                        {
+                            string contextInfo = m_validationContext?.GetContextInfo() ?? "";
+                            throw new ArgumentException($"{contextInfo}无效的万分位整数值: {ln.RawValue}，必须是可以转换为浮点数的有效数值");
+                        }
+
                         if (FunctionSignature.ShouldCastToTenThousandth(ln, parent)) // 转成万分位整数
                         {
-                            return ((int)(float.Parse(ln.RawValue) * 10000)).ToString();
+                            return ((int)(floatVal * 10000)).ToString();
                         }
 
                         throw new NotImplementedException("CastToTenThousandth only support ComparisonNode parent!");
                     }
 
                     case MythValueType.Bool:
-                        return ln.RawValue.ToLower(); // "true"/"false" 
+                    {
+                        // 验证布尔值有效性
+                        var lowerValue = ln.RawValue.ToLower();
+                        if (lowerValue != "true" && lowerValue != "false")
+                        {
+                            string contextInfo = m_validationContext?.GetContextInfo() ?? "";
+                            throw new ArgumentException($"{contextInfo}无效的布尔值: {ln.RawValue}，必须是 true 或 false");
+                        }
+                        return lowerValue; // "true"/"false"
+                    }
                     case MythValueType.String:
                     case MythValueType.Enum:
                     {
-                        var functionCallNode = (FunctionCallNode)parent;
-                        var functionSignature = functionCallNode.FunctionSignature;
-                        var paramterInfo = nodeIndexFromParent != -1 && nodeIndexFromParent < functionSignature.Parameters.Count ? functionSignature.Parameters[nodeIndexFromParent] : null;
-                        if (paramterInfo != null && !string.IsNullOrEmpty(paramterInfo.LubanTypeReference))
+                        if (parent is FunctionCallNode functionCallNode)
                         {
-                            // 从 luban 的 enum 定义中反射获取 actualTypeStr 对应的 DefEnum，并使用 DefEnum 反射中文的 RawValue 到对应的 Enum 内容。
-                            var enumDef = m_exportEnums.Find(defEnum => defEnum.FullName == paramterInfo.LubanTypeReference);
-                            if (enumDef == null)
+                            var functionSignature = functionCallNode.FunctionSignature;
+                            var paramterInfo = nodeIndexFromParent != -1 && nodeIndexFromParent < functionSignature.Parameters.Count ? functionSignature.Parameters[nodeIndexFromParent] : null;
+                            if (paramterInfo != null && !string.IsNullOrEmpty(paramterInfo.LubanTypeReference))
                             {
-                                throw new NotImplementedException($"Enum {paramterInfo.LubanTypeReference} not found in export enums");
+                                // 使用统一的验证函数
+                                var validationResult = MythConverter.ValidateLubanTypeReference(
+                                    paramterInfo.LubanTypeReference,
+                                    ln.RawValue,
+                                    m_generationContext,
+                                    isGolang: true,
+                                    m_validationContext);
+
+                                return validationResult.CodeExpression;
                             }
-
-                            var enumItem = enumDef.Items.Find(item => item.Name == ln.RawValue || item.Alias == ln.RawValue);
-                            if (enumItem == null)
-                            {
-                                throw new NotImplementedException($"Enum item {ln.RawValue} not found in enum {paramterInfo.LubanTypeReference}");
-                            }
-
-
-                            return $"{enumItem.Value}";
                         }
 
                         return $"\"{ln.RawValue}\"";
                     }
                     case MythValueType.Long:
                     {
+                        // 验证长整数有效性
+                        if (!long.TryParse(ln.RawValue, out _))
+                        {
+                            string contextInfo = m_validationContext?.GetContextInfo() ?? "";
+                            throw new ArgumentException($"{contextInfo}无效的长整数值: {ln.RawValue}，必须是可以转换为长整数的有效数值");
+                        }
                         return $"int64({ln.RawValue})";
                     }
                     default:
@@ -192,9 +246,10 @@ namespace Myth
         /// }
         /// 
         /// </summary>
-        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node, List<DefEnum> exportEnums)
+        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node, GenerationContext ctx, MythConverter.ValidationContext? validationContext = null)
         {
-            m_exportEnums = exportEnums;
+            m_generationContext = ctx;
+            m_validationContext = validationContext;
             var exprCode = GenerateExpressionCode(node);
             return $@"
 func {methodName}(ctx {GolangTopModuleName}.{interfaceName}) bool {{

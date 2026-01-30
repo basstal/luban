@@ -65,6 +65,8 @@ public static class RuntimeEnvironment
 
     private static NLog.Logger s_logger;
 
+    public static NLog.Logger Logger => s_logger;
+
     private static SimpleLauncher m_launcher;
     public static void Initialize(string[] args)
     {
@@ -85,7 +87,7 @@ public static class RuntimeEnvironment
             if (opts.ValidationFailAsError && GenerationContext.Current.AnyValidatorFail)
             {
                 s_logger.Error("encounter some validation failure. exit code: 1");
-                Environment.Exit(1);
+                // Environment.Exit(1);
             }
             s_logger.Info("bye~");
         }
@@ -93,7 +95,7 @@ public static class RuntimeEnvironment
         {
             PrettyPrintException(e);
             s_logger.Error("run failed!!!");
-            Environment.Exit(1);
+            // Environment.Exit(1);
         }
     }
 
@@ -171,7 +173,7 @@ public static class RuntimeEnvironment
             if (result.Tag == ParserResultType.NotParsed)
             {
                 Console.Error.WriteLine(helpWriter.ToString());
-                Environment.Exit(1);
+                // Environment.Exit(1);
             }
 
             return ((Parsed<CommandOptions>)result).Value;
@@ -179,7 +181,7 @@ public static class RuntimeEnvironment
         catch (Exception exception)
         {
             Console.Error.WriteLine(exception.Message);
-            Environment.Exit(1);
+            // Environment.Exit(1);
         }
 
         return null;
@@ -194,13 +196,13 @@ public static class RuntimeEnvironment
             if (pair.Length != 2)
             {
                 Console.Error.WriteLine($"invalid xargs:{arg}");
-                Environment.Exit(1);
+                // Environment.Exit(1);
             }
 
             if (!result.TryAdd(pair[0], pair[1]))
             {
                 Console.Error.WriteLine($"duplicate xargs:{arg}");
-                Environment.Exit(1);
+                // Environment.Exit(1);
             }
         }
         return result;

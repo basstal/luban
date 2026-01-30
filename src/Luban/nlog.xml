@@ -1,33 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <nlog xmlns="http://www.nlog-project.org/schemas/NLog.xsd"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-	<targets>
-		<!-- 让所有目标异步写入（可选） -->
-		<default-wrapper xsi:type="AsyncWrapper"
+    <targets>
+        <!-- 让所有目标异步写入（可选） -->
+        <default-wrapper xsi:type="AsyncWrapper"
                      name="default-wrapper"
                      queueLimit="1000000"
                      timeToSleepBetweenBatches="1"
                      batchSize="1000"
                      overflowAction="Block" />
-		<!-- stdout：彩色高亮 -->
-		<target name="logconsole"
+        <!-- 文件输出 -->
+        <target name="logfile"
+            xsi:type="File"
+            fileName="${basedir}/logs/luban-${shortdate}.log"
+            encoding="utf-8"
+            layout="${date}|${level:uppercase=true}|${logger}|${message}${onexception:${newline}${exception:format=tostring}${exception:format=StackTrace}}"
+            archiveFileName="${basedir}/logs/archive/luban-{#}.log"
+            archiveEvery="Day"
+            archiveNumbering="Rolling"
+            maxArchiveFiles="30"
+            keepFileOpen="false"
+            concurrentWrites="true" />
+        <!-- stdout：彩色高亮 -->
+        <target name="logconsole"
             xsi:type="ColoredConsole"
             useDefaultRowHighlightingRules="false"
+            encoding="utf-8"
             layout="${date}|${level:uppercase=true}|${message}${onexception:${newline}${exception:format=tostring}${exception:format=StackTrace}}">
-			<highlight-row condition="level == LogLevel.Warn"  foregroundColor="Yellow" />
-			<highlight-row condition="level == LogLevel.Error" foregroundColor="Red" />
-			<highlight-row condition="level == LogLevel.Fatal" foregroundColor="Red" backgroundColor="White" />
-		</target>
-		<!-- stderr：只需 error="true" -->
-		<target name="stderr"
+            <highlight-row condition="level == LogLevel.Warn"  foregroundColor="Yellow" />
+            <highlight-row condition="level == LogLevel.Error" foregroundColor="Red" />
+            <highlight-row condition="level == LogLevel.Fatal" foregroundColor="Red" backgroundColor="White" />
+        </target>
+        <!-- stderr：只需 error="true" -->
+        <target name="stderr"
             xsi:type="Console"
             error="true"
+            encoding="utf-8"
             layout="${date}|${level:uppercase=true}|${message}${onexception:${newline}${exception:format=tostring}${exception:format=StackTrace}}" />
-	</targets>
-	<rules>
-		<!-- Info-Warn 级别 → 仅 stdout -->
-		<logger name="*" minlevel="Info" maxlevel="Warn" writeTo="logconsole" />
-		<!-- Error 及以上 → 同时写 stdout + stderr -->
-		<logger name="*" minlevel="Error" writeTo="logconsole,stderr" />
-	</rules>
+    </targets>
+    <rules>
+        <!-- Debug-Warn 级别 → 写入文件和控制台 -->
+        <logger name="*" minlevel="Info" maxlevel="Warn" writeTo="logconsole" />
+        <!-- Error 及以上 → 写入文件、控制台和 stderr -->
+        <logger name="*" minlevel="Error" writeTo="logconsole,stderr" />
+    </rules>
 </nlog>

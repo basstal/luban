@@ -1,4 +1,7 @@
 using Luban.Defs;
+using Luban;
+
+
 
 namespace Myth
 {
@@ -6,6 +9,6 @@ namespace Myth
     {
         public string GetEvalContextByFunctionSignature(FunctionSignature functionSignature, string[] argCodes);
         public string GenerateExpressionCode(MythExprNode node, MythExprNode parent = null, int nodeIndexFromParent = -1);
-        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node, List<DefEnum> exportEnums);
+        public string GenerateMethodCode(string methodName, string interfaceName, MythExprNode node, GenerationContext ctx, MythConverter.ValidationContext? validationContext = null);
     }
 }
