@@ -46,6 +46,7 @@ public class SchemaInfoManager
             ["isContainerType"] = TypeOptionsManager.IsContainerType(type),
             ["isMythContent"] = f.HasTag("IsMythContent"),
             ["isMythNoRpn"] = f.HasTag("MythNoRpn"),
+            ["mythPayloadValidatorField"] = f.GetTag("MythPayloadValidatorField"),
         };
 
         // 尝试获取 Bean 类型（直接是 Bean 或 容器内的元素是 Bean）

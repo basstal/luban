@@ -3,14 +3,52 @@ using Luban;
 using System.Collections.Generic;
 using System.Linq;
 using Luban.Types;
+using Myth;
 
 namespace LocalBridge;
+
+/// <summary>
+/// 验证器参数信息
+/// </summary>
+public class PayloadValidatorParameter
+{
+    /// <summary>
+    /// 值类型
+    /// </summary>
+    public MythValueType ValueType { get; set; }
+
+    /// <summary>
+    /// 引用类型（枚举或表的全名）
+    /// </summary>
+    public string ReferenceType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否为参数（可变参数）
+    /// </summary>
+    public bool IsParameter { get; set; }
+}
+
+/// <summary>
+/// 验证器信息
+/// </summary>
+public class PayloadValidatorInfo
+{
+    /// <summary>
+    /// 验证器参数列表
+    /// </summary>
+    public List<PayloadValidatorParameter> Parameters { get; set; } = new();
+}
 
 public class TypeOption
 {
     public string Value { get; set; } = string.Empty;
     public string Label { get; set; } = string.Empty;
     public string Comment { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Payload 验证器信息（如果存在）
+    /// </summary>
+    public PayloadValidatorInfo? PayloadValidator { get; set; }
 }
 
 public interface ITypeOptionsProvider
@@ -36,11 +74,31 @@ public class EnumOptionsProvider : ITypeOptionsProvider
         var defType = FindDefType(type);
         if (defType is DefEnum defEnum)
         {
-            return defEnum.Items.Select(item => new TypeOption
+            var payloadValidators = MythGenerationContextEnhance.BuildPayloadValidators(defEnum);
+            return defEnum.Items.Select(item =>
             {
-                Value = item.Name,
-                Label = item.AliasOrName,
-                Comment = item.Comment
+                var option = new TypeOption
+                {
+                    Value = item.Name,
+                    Label = item.AliasOrName,
+                    Comment = item.Comment,
+                };
+
+                // 如果存在 payloadValidators，填充验证器信息
+                if (payloadValidators != null && payloadValidators.TryGetValue(item.IntValue, out var validatorList))
+                {
+                    option.PayloadValidator = new PayloadValidatorInfo
+                    {
+                        Parameters = validatorList.Select(v => new PayloadValidatorParameter
+                        {
+                            ValueType = v.Item1,
+                            ReferenceType = v.Item2,
+                            IsParameter = v.Item3
+                        }).ToList()
+                    };
+                }
+
+                return option;
             }).ToList();
         }
         return new List<TypeOption>();

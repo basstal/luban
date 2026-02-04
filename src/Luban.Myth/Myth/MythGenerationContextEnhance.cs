@@ -243,48 +243,9 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
         }
 
         Dictionary<int, List<(MythValueType, string, bool)>>? payloadValidators = null;
-        if (payloadValidatorField != null)
+        if (payloadValidatorField != null && payloadValidatorField.CType is TEnum tEnum)
         {
-            payloadValidators = new Dictionary<int, List<(MythValueType, string, bool)>>();
-            if (payloadValidatorField.CType is TEnum tEnum)
-            {
-                var defEnum = tEnum.DefEnum;
-                foreach (var item in defEnum.Items)
-                {
-                    var validatorContent = item.GetTag("MythPayloadValidator");
-                    var isValidatorIsParameter = item.HasTag("MythPayloadValidatorIsParams");
-                    if (!string.IsNullOrEmpty(validatorContent))
-                    {
-                        var validatorContentList = validatorContent.Split(',');
-                        var mythValueTypes = new List<(MythValueType, string, bool)>();
-                        foreach (var oneParameter in validatorContentList)
-                        {
-                            // 提取 oneParameter 中类型和值，其中类型在后缀中以 [] 包裹
-                            var typeAndValue = oneParameter.Split('[');
-                            var type = string.Empty;
-                            var referenceDefType = string.Empty;
-                            if (typeAndValue.Length == 2)
-                            {
-                                type = typeAndValue[0];
-                                referenceDefType = typeAndValue[1].TrimEnd(']');
-                            }
-                            else
-                            {
-                                type = oneParameter;
-                                referenceDefType = string.Empty;
-                            }
-                            if (!Enum.TryParse(type, out MythValueType mythValueType) || mythValueType == MythValueType.Unknown)
-                            {
-                                s_logger.Error($"[ERROR] PayloadValidator tag {oneParameter} is not valid, item {item.Name} in enum {defEnum.Name}");
-                                continue;
-                            }
-                            mythValueTypes.Add((mythValueType, referenceDefType, false));
-                        }
-                        mythValueTypes[^1] = (mythValueTypes[^1].Item1, mythValueTypes[^1].Item2, isValidatorIsParameter);
-                        payloadValidators.Add(item.IntValue, mythValueTypes);
-                    }
-                }
-            }
+            payloadValidators = BuildPayloadValidators(tEnum.DefEnum);
         }
 
         return (bean, new MetadataEnhance()
@@ -296,6 +257,74 @@ public class MythGenerationContextEnhance : IMythGenerationContextEnhance
             payloadValidators = payloadValidators,
             payloadValidatorFieldIndex = payloadValidatorFieldIndex,
         });
+    }
+
+    /// <summary>
+    /// 从枚举定义构建 payloadValidators 字典
+    /// </summary>
+    /// <param name="defEnum">枚举定义</param>
+    /// <returns>验证器字典，如果枚举中没有有效的验证器则返回 null</returns>
+    public static Dictionary<int, List<(MythValueType, string, bool)>>? BuildPayloadValidators(DefEnum defEnum)
+    {
+        var payloadValidators = new Dictionary<int, List<(MythValueType, string, bool)>>();
+        foreach (var item in defEnum.Items)
+        {
+            var validatorContent = item.GetTag("MythPayloadValidator");
+            var isValidatorIsParameter = item.HasTag("MythPayloadValidatorIsParams");
+            var mythValueTypes = ParsePayloadValidator(validatorContent, isValidatorIsParameter, item, defEnum);
+            if (mythValueTypes != null)
+            {
+                payloadValidators.Add(item.IntValue, mythValueTypes);
+            }
+        }
+        return payloadValidators.Count > 0 ? payloadValidators : null;
+    }
+
+    /// <summary>
+    /// 解析 MythPayloadValidator 标签内容
+    /// </summary>
+    /// <param name="validatorContent">验证器内容字符串</param>
+    /// <param name="isValidatorIsParameter">是否为参数验证器</param>
+    /// <param name="item">枚举项</param>
+    /// <param name="defEnum">枚举定义</param>
+    /// <returns>解析后的验证器类型列表，如果内容为空则返回 null</returns>
+    private static List<(MythValueType, string, bool)>? ParsePayloadValidator(string validatorContent, bool isValidatorIsParameter, DefEnum.Item item, DefEnum defEnum)
+    {
+        if (string.IsNullOrEmpty(validatorContent))
+        {
+            return null;
+        }
+
+        var validatorContentList = validatorContent.Split(',');
+        var mythValueTypes = new List<(MythValueType, string, bool)>();
+        foreach (var oneParameter in validatorContentList)
+        {
+            // 提取 oneParameter 中类型和值，其中类型在后缀中以 [] 包裹
+            var typeAndValue = oneParameter.Split('[');
+            var type = string.Empty;
+            var referenceDefType = string.Empty;
+            if (typeAndValue.Length == 2)
+            {
+                type = typeAndValue[0];
+                referenceDefType = typeAndValue[1].TrimEnd(']');
+            }
+            else
+            {
+                type = oneParameter;
+                referenceDefType = string.Empty;
+            }
+            if (!Enum.TryParse(type, out MythValueType mythValueType) || mythValueType == MythValueType.Unknown)
+            {
+                s_logger.Error($"[ERROR] PayloadValidator tag {oneParameter} is not valid, item {item.Name} in enum {defEnum.Name}");
+                continue;
+            }
+            mythValueTypes.Add((mythValueType, referenceDefType, false));
+        }
+        if (mythValueTypes.Count > 0)
+        {
+            mythValueTypes[^1] = (mythValueTypes[^1].Item1, mythValueTypes[^1].Item2, isValidatorIsParameter);
+        }
+        return mythValueTypes;
     }
 
     // 新增：校验单个literal节点类型和表引用
