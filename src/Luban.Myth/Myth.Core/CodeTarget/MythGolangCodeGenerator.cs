@@ -207,9 +207,56 @@ namespace Myth
                 if (returnNode.Value is ConditionalExpressionNode returnConditionalExpressionNode)
                 {
                     var condition = GenerateExpressionCode(returnConditionalExpressionNode.Condition, returnConditionalExpressionNode);
-                    var thenExpr = GenerateExpressionCode(returnConditionalExpressionNode.ThenExpr, returnConditionalExpressionNode);
-                    var elseExpr = GenerateExpressionCode(returnConditionalExpressionNode.ElseExpr, returnConditionalExpressionNode);
-                    return $"if ({condition}){{\n  return {thenExpr}\n}}\nreturn {elseExpr}\n";
+                    // 检查 thenExpr 和 elseExpr 是否是嵌套的条件表达式
+                    bool thenIsConditional = returnConditionalExpressionNode.ThenExpr is ConditionalExpressionNode;
+                    bool elseIsConditional = returnConditionalExpressionNode.ElseExpr is ConditionalExpressionNode;
+
+                    // 如果 thenExpr 是条件表达式，需要特殊处理以避免生成 "return if"
+                    string thenExpr;
+                    if (thenIsConditional)
+                    {
+                        // 递归处理嵌套的条件表达式，传入 ReturnNode 作为 parent 以保持上下文
+                        thenExpr = GenerateExpressionCode(returnConditionalExpressionNode.ThenExpr, returnNode);
+                    }
+                    else
+                    {
+                        thenExpr = GenerateExpressionCode(returnConditionalExpressionNode.ThenExpr, returnConditionalExpressionNode);
+                    }
+
+                    // 如果 elseExpr 是条件表达式，需要特殊处理
+                    string elseExpr;
+                    if (elseIsConditional)
+                    {
+                        // 递归处理嵌套的条件表达式，传入 ReturnNode 作为 parent 以保持上下文
+                        elseExpr = GenerateExpressionCode(returnConditionalExpressionNode.ElseExpr, returnNode);
+                    }
+                    else
+                    {
+                        elseExpr = GenerateExpressionCode(returnConditionalExpressionNode.ElseExpr, returnConditionalExpressionNode);
+                    }
+
+                    // 如果 thenExpr 或 elseExpr 是条件表达式，它们已经包含了 return 语句
+                    // 否则需要添加 return
+                    if (thenIsConditional && elseIsConditional)
+                    {
+                        // 两个分支都是条件表达式，都已经包含了 return，直接拼接
+                        return $"if ({condition}){{\n  {thenExpr.Trim()}\n}}\n{elseExpr.Trim()}\n";
+                    }
+                    else if (thenIsConditional)
+                    {
+                        // then 分支是条件表达式（已包含 return），else 分支需要添加 return
+                        return $"if ({condition}){{\n  {thenExpr.Trim()}\n}}\nreturn {elseExpr}\n";
+                    }
+                    else if (elseIsConditional)
+                    {
+                        // else 分支是条件表达式（已包含 return），then 分支需要添加 return
+                        return $"if ({condition}){{\n  return {thenExpr}\n}}\n{elseExpr.Trim()}\n";
+                    }
+                    else
+                    {
+                        // 标准格式，需要添加 return
+                        return $"if ({condition}){{\n  return {thenExpr}\n}}\nreturn {elseExpr}\n";
+                    }
                 }
                 else
                 {
@@ -226,9 +273,74 @@ namespace Myth
             else if (node is ConditionalExpressionNode conditionalExpressionNode)
             {
                 var condition = GenerateExpressionCode(conditionalExpressionNode.Condition, conditionalExpressionNode);
-                var thenExpr = GenerateExpressionCode(conditionalExpressionNode.ThenExpr, conditionalExpressionNode);
-                var elseExpr = GenerateExpressionCode(conditionalExpressionNode.ElseExpr, conditionalExpressionNode);
-                return $"if ({condition}){{\n  {thenExpr}\n}}\n{elseExpr}\n";
+
+                // 处理嵌套的条件表达式：如果 thenExpr 或 elseExpr 本身是条件表达式，需要特殊处理
+                bool thenIsConditional = conditionalExpressionNode.ThenExpr is ConditionalExpressionNode;
+                bool elseIsConditional = conditionalExpressionNode.ElseExpr is ConditionalExpressionNode;
+                bool isInReturnContext = parent is ReturnNode;
+
+                // 根据上下文和嵌套情况生成代码
+                string thenExpr;
+                string elseExpr;
+
+                if (thenIsConditional && isInReturnContext)
+                {
+                    // then 分支是条件表达式且在 return 上下文中，传入 ReturnNode 作为 parent
+                    thenExpr = GenerateExpressionCode(conditionalExpressionNode.ThenExpr, parent);
+                }
+                else
+                {
+                    thenExpr = GenerateExpressionCode(conditionalExpressionNode.ThenExpr, conditionalExpressionNode);
+                }
+
+                if (elseIsConditional && isInReturnContext)
+                {
+                    // else 分支是条件表达式且在 return 上下文中，传入 ReturnNode 作为 parent
+                    elseExpr = GenerateExpressionCode(conditionalExpressionNode.ElseExpr, parent);
+                }
+                else
+                {
+                    elseExpr = GenerateExpressionCode(conditionalExpressionNode.ElseExpr, conditionalExpressionNode);
+                }
+
+                // 如果在 return 上下文中，且存在嵌套的条件表达式，需要展开为 if-return 结构
+                if (isInReturnContext)
+                {
+                    if (thenIsConditional && elseIsConditional)
+                    {
+                        // 两个分支都是条件表达式，都已经包含了 return，直接拼接
+                        return $"if ({condition}){{\n  {thenExpr.Trim()}\n}}\n{elseExpr.Trim()}\n";
+                    }
+                    else if (thenIsConditional)
+                    {
+                        // then 分支是条件表达式（已包含 return），else 分支需要添加 return
+                        return $"if ({condition}){{\n  {thenExpr.Trim()}\n}}\nreturn {elseExpr}\n";
+                    }
+                    else if (elseIsConditional)
+                    {
+                        // else 分支是条件表达式（已包含 return），then 分支需要添加 return
+                        return $"if ({condition}){{\n  return {thenExpr}\n}}\n{elseExpr.Trim()}\n";
+                    }
+                    else
+                    {
+                        // 标准格式（在 return 中）
+                        return $"if ({condition}){{\n  return {thenExpr}\n}}\nreturn {elseExpr}\n";
+                    }
+                }
+                else
+                {
+                    // 非 return 上下文，使用 if-else 结构
+                    if (thenIsConditional || elseIsConditional)
+                    {
+                        // 有嵌套条件表达式，使用 if-else 结构
+                        return $"if ({condition}){{\n  {thenExpr.Trim()}\n}} else {{\n  {elseExpr.Trim()}\n}}\n";
+                    }
+                    else
+                    {
+                        // 标准格式
+                        return $"if ({condition}){{\n  {thenExpr}\n}} else {{\n  {elseExpr}\n}}\n";
+                    }
+                }
             }
 
             return "/*UNKNOWN*/";

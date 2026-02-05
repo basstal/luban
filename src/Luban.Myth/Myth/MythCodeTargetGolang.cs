@@ -19,6 +19,7 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
         var tplCtx = CreateTemplateContext(template);
         var typeNameToFileSaverPath = GetFileNameWithoutExtByTypeName(bean.FullName);
         var folderName = typeNameToFileSaverPath.Split(".").First().lower();
+        var importPrefix = MythManager.Ins.MythConfig.ImportPrefixList != null ? string.Join("\n", MythManager.Ins.MythConfig.ImportPrefixList.Select(prefix => $"\"{prefix}\"")) : "";
         var extraEnvs = new ScriptObject
         {
             { "__ctx", ctx },
@@ -40,7 +41,7 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             { "__interface_name", interfaceName },
             { "__golang_myth_package", folderName },
             { "__golang_top_myth_package", Path.GetFileName(MythManager.Ins.MythConfig.OutputMythCodeDir) },
-            { "__import_prefix", string.Join("\n", MythManager.Ins.MythConfig.ImportPrefixList.Select(prefix => $"\"{prefix}\"")) },
+            { "__import_prefix",importPrefix },
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));
@@ -204,14 +205,14 @@ public class MythCodeTemplateTargetGolang : GoCodeTargetBase, IMythCodeTemplateT
             // }
             return outputFunction;
         }).ToList();
-
+        var importPrefix = MythManager.Ins.MythConfig.ImportPrefixList != null ? string.Join("\n", MythManager.Ins.MythConfig.ImportPrefixList.Select(prefix => $"\"{prefix}\"")) : "";
         var extraEnvs = new ScriptObject
         {
             { "__ctx", ctx },
             { "__functions", functions },
             { "__need_import_tables", needImportTables },
             { "__golang_top_myth_package", Path.GetFileName(MythManager.Ins.MythConfig.OutputMythExpressionDir) },
-            { "__import_prefix", string.Join("\n", MythManager.Ins.MythConfig.ImportPrefixList.Select(prefix => $"\"{prefix}\"")) },
+            { "__import_prefix", importPrefix },
         };
         tplCtx.PushGlobal(extraEnvs);
         writer.Write(template.Render(tplCtx));
